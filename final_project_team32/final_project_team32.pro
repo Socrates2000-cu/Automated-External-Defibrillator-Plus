@@ -9,6 +9,9 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    AED.cpp \
+    Electrode.cpp \
+    Patient.cpp \
     Sleeper.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -18,7 +21,7 @@ SOURCES += \
 
 HEADERS += \
     AED.h \
-    ElectrodePad.h \
+    Electrode.h \
     Patient.h \
     defs.h \
     mainwindow.h

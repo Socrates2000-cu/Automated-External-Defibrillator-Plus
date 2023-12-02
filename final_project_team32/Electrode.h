@@ -1,15 +1,17 @@
-#ifndef ELECTRODEPAD_H
-#define ELECTRODEPAD_H
+#ifndef ELECTRODE_H
+#define ELECTRODE_H
 
 #include <QObject>
 #include "Patient.h"
 
-class ElectrodePad: public QObject {
+class Electrode: public QObject {
 
     Q_OBJECT
 
 public:
-    ElectrodePad(Patient* p=nullptr);
+    Electrode(Patient* p=nullptr);
+
+    Patient* getPatient();
     void setPatient(Patient*);
     bool hasProperlyConnectedToPatient();
 
@@ -20,4 +22,4 @@ private:
 
 };
 
-#endif // ELECTRODEPAD_H
+#endif // ELECTRODE_H

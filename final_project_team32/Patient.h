@@ -2,19 +2,20 @@
 #define PATIENT_H
 
 #include <QObject>
-#include "defs.h"
 
 class Patient: public QObject {
 
     Q_OBJECT
 
 public:
-    Patient();
-    ECGWaveform getEcgWave();
+    Patient(QString ageStage = "adult", QString ecgWave = "V_TACH");
+// V_TACH,V_FIB,PEA,ASYSTOLE
+    QString getAgeStage();
+    QString getEcgWave();
 
 private:
-    AgeStage ageStage;
-    ECGWaveform ecgWave;
+    QString ageStage;
+    QString ecgWave;
 };
 
 #endif // PATIENT_H

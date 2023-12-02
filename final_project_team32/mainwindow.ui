@@ -185,6 +185,9 @@ border:none;</string>
       <height>10</height>
      </size>
     </property>
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QTextEdit" name="display">
     <property name="geometry">
@@ -257,7 +260,7 @@ border:none;</string>
      <x>0</x>
      <y>0</y>
      <width>836</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
