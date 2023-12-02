@@ -2,6 +2,7 @@
 #define AED_H
 
 #include <QObject>
+#include <QElapsedTimer>
 #include "defs.h"
 #include "ElectrodePad.h"
 
@@ -21,9 +22,11 @@ signals:
 private:
     ElectrodePad* electrodePad;
     int numOfShocks;  // the number of shocks delivered
-    int elapsedTime;  // the elapsed time in seconds
+    int shockAmount; //the amount of shock in Joul to be delivered
+    QElapsedTimer elapsedTime;  // the elapsed time in seconds
     VoicePrompt textPrompt;  // current voice prompt / text prompt displayed
-    ECGWaveform ecgWaveform;
+    bool isShockAdvised();
+    void charge();
 
 };
 
