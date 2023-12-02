@@ -11,7 +11,10 @@ CONFIG += c++11
 SOURCES += \
     Sleeper.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    AED.cpp \
+    ElectrodePad.cpp \
+    Patient.cpp
 
 HEADERS += \
     AED.h \
