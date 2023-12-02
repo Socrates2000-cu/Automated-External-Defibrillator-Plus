@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTime>
+#include <QTimer>
+#include "AED.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,9 +20,11 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    AED* theAEDPlus;
 
 private slots:
     void testButPressed();
 
 };
+
 #endif // MAINWINDOW_H

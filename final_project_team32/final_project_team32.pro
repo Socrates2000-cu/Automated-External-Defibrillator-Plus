@@ -14,6 +14,10 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
+    AED.h \
+    ElectrodePad.h \
+    Patient.h \
+    defs.h \
     mainwindow.h
 
 FORMS += \
