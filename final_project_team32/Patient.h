@@ -10,9 +10,11 @@ class Patient: public QObject {
 
 public:
     Patient();
+    ECGWaveform getEcgWave();
 
 private:
     AgeStage ageStage;
+    ECGWaveform ecgWave;
 };
 
 #endif // PATIENT_H

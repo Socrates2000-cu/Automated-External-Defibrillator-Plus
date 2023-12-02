@@ -7,7 +7,10 @@ enum class VoicePrompt{
 };
 
 enum class ECGWaveform{
-    HEALTHY,
+    V_TACH,
+    V_FIB,
+    PEA,
+    ASYSTOLE
 };
 
 enum class AgeStage {
