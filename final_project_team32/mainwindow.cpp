@@ -24,10 +24,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->deliverShock->setEnabled(false); // disabled by default
     connect(ui->powerButton, SIGNAL(toggled(bool)), this, SLOT(pressPowerButton(bool)));
 
-    connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));
-
     // connections of signal-slots cycle
-    connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));
+    connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
+    connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> this shockable()
+    connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));  // shock button pressed -> this deliverShock()
 }
 
 MainWindow::~MainWindow()
@@ -70,6 +70,7 @@ void MainWindow::analyzeHeartRhythm()
 void MainWindow::shockable() {
     // indicator light flashes, enable button
     indicatorLightFlash(ui->deliverShock);
+    qDebug() << "is shockable";
     ui->deliverShock->setEnabled(true);
 }
 
@@ -81,6 +82,7 @@ void MainWindow::deliverShock()
     qDebug() << "Shock will be delivered in three, two, one ...";
     theAEDPlus->deliverShock();
     qDebug() << "Shock tone beeps. Shock delivered.";
+    ui->deliverShock->setEnabled(false); // disabled again
 }
 
 //TODO

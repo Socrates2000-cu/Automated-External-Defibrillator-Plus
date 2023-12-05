@@ -4,8 +4,6 @@
 AED::AED() : batteryLevel(100), numOfShocks(0), shockAmount(0) {
     electrode = new Electrode();
     elapsedTime.start(); //start elapsed timer
-
-    connect(this, SIGNAL(shockable()), this, SLOT(deliverShock()));
 }
 
 AED::~AED() {
@@ -51,7 +49,7 @@ void AED::analyzeAndDecideShock()
             else if (numOfShocks == 1) shockAmount = 70;
             else shockAmount = 85;
         }
-        emit shockable();
+        shockable();
     } else if (ecgWave == "PEA" || ecgWave == "ASYSTOLE") {
         qDebug() << "No shock advised.";
     }
@@ -59,7 +57,7 @@ void AED::analyzeAndDecideShock()
 
 void AED::deliverShock()
 {
-    qDebug() << "Shock at " << shockAmount << "J delivered.";
+    qDebug() << "Shock at" << shockAmount << "J delivered.";
     ++numOfShocks;
 }
 

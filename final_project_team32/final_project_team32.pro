@@ -14,10 +14,7 @@ SOURCES += \
     Patient.cpp \
     Sleeper.cpp \
     main.cpp \
-    mainwindow.cpp \
-    AED.cpp \
-    ElectrodePad.cpp \
-    Patient.cpp
+    mainwindow.cpp
 
 HEADERS += \
     AED.h \

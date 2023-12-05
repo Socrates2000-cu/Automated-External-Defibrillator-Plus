@@ -200,6 +200,9 @@ border:none;</string>
     </property>
    </widget>
    <widget class="QPushButton" name="deliverShock">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>340</x>
