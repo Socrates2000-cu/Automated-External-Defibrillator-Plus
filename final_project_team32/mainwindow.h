@@ -30,7 +30,7 @@ private:
     void powerOn();  // start the cycle after power on
     void powerOff();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
-
+    void displayPrompt(QString input);
     Ui::MainWindow *ui;
     AED* theAEDPlus;
     Electrode* electrode;
@@ -47,6 +47,11 @@ private slots:
 
 
     void testButPressed();
+
+    void attachPads();  //step3
+    void connectedChest(); //step3
+    void setEcgpic();
+
 
 signals:
     void analyze();
