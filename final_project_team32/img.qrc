@@ -6,5 +6,9 @@
         <file>power_button.jpg</file>
         <file>self_test_not_ok.jpg</file>
         <file>self_test_ok.jpg</file>
+        <file>ASYSTOLE.jpg</file>
+        <file>PEA.jpg</file>
+        <file>V_FIB.jpg</file>
+        <file>V_TACH.jpg</file>
     </qresource>
 </RCC>
