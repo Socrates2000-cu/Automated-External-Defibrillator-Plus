@@ -1,7 +1,7 @@
 #include "AED.h"
 #include <QDebug>
 
-AED::AED() : batteryLevel(100), numOfShocks(0), shockAmount(0) {
+AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
     electrode = new Electrode();
     elapsedTime.start(); //start elapsed timer
 }
@@ -10,17 +10,118 @@ AED::~AED() {
     delete electrode;
 }
 
-Electrode* AED::getElectrode()
-{
+void AED::power(){
+
+    if(!isPowered()){
+        //turn on
+        powered = true;
+        //visual prompt
+        qInfo("Starting AED...");
+        //audio prompt
+        //initiate self-test
+        if(selfTest()){
+
+            //this tests updating battery as AED runs
+            batteryLevel-=2;
+            qInfo("Battery: %d", batteryLevel);
+            int b =batteryLevel;
+            updateBattery(b);
+            qInfo("Calling emergency services...");
+            //timer
+            //next signal or function initiating electrodePad
+        }
+        else{
+           //TIMER
+            power();
+        }
+
+    }
+   else{
+        //prompts for shutting off
+        qInfo("Shutting down...");
+        //turn LEDsoff
+        //indefinite sleep?
+        powered = false;
+    }
+}
+
+
+bool AED::isPowered(){
+    return powered;
+}
+
+
+bool AED::selfTest(){
+    qInfo("Self test init");
+    if((getElectrode()!=nullptr) && hasBattery()){//add battery condition
+        qInfo("UNIT OK.");
+        return true;
+    }
+
+    qInfo("UNIT FAILED.");
+    if(!hasBattery()){
+        qInfo("CHANGE BATTERIES.");
+        return false;
+    }
+    if(getElectrode()==nullptr){
+        qInfo("Connect electrode and restart AED.");
+    }
+    return false;
+}
+
+//bool AED::electrodeConnected(){
+//    emit checkElectrode();
+//    return connected;
+//}
+
+//void AED::setConnection(bool state){
+//    connected=state;
+//}
+
+void AED::connectElectrode(Electrode* electrode){
+    this->electrode = electrode;
+}
+
+Electrode* AED::getElectrode(){
     return electrode;
 }
 
-bool AED::isShockAdvised() {
-    return false; //TODO
+bool AED::hasBattery(){
+
+    if(currBattery()<20){
+        batteryLevel=false;
+    }
+    else{
+        batteryLevel=true;
+    }
+    return batteryLevel;
 }
 
-void AED::charge() {
+int AED::currBattery(){
+   // emit checkBattery();
+    return batteryLevel;
+}
 
+void AED::setBattery(int b){
+    batteryLevel=b;
+}
+
+void AED::updateBattery(int b){
+    emit updateFromAED(b);
+}
+
+void AED::chargeBattery() {
+    updateBattery(100);
+}
+
+void AED::consumeBattery(int b){
+
+    int newBattery = currBattery()-b;
+    updateBattery(newBattery);
+
+}
+bool AED::isShockAdvised() {
+    return false; //TODO
 }
 
 void AED::analyzeAndDecideShock()

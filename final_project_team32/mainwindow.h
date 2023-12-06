@@ -19,6 +19,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void pressPowerButton();
+
 public slots:
     void shockable();
 
@@ -31,12 +33,19 @@ private:
 
     Ui::MainWindow *ui;
     AED* theAEDPlus;
+    Electrode* electrode;
 
 private slots:
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
+    //void electrodeConnected();
+    //void checkBattery();
+    void setBattery(int v);
+    void updateBattery(int v);
+    void on_increase_clicked();
+    void on_decrease_clicked();
 
-    void pressPowerButton(bool checked);
+
     void testButPressed();
 
 signals:

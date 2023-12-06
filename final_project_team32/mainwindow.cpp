@@ -14,15 +14,22 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     theAEDPlus = new AED();
-    Patient* patient = new Patient();
-    Electrode* electrode = theAEDPlus->getElectrode();
-    electrode->setPatient(patient);
+    //Patient* patient = new Patient();
+    electrode = new Electrode();
+    if(ui->checkBox_pad_aed->isChecked()) theAEDPlus->connectElectrode(electrode);
 
     //for test --> turn indicator1 into red (now not working because the button is disabled at beginning)
     //connect(ui->deliverShock, SIGNAL(released()), this, SLOT(testButPressed()));
 
+    //Power button
+    connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
+    connect(ui->powerButton, &QPushButton::clicked, this, &MainWindow::pressPowerButton);
+
     ui->deliverShock->setEnabled(false); // disabled by default
-    connect(ui->powerButton, SIGNAL(toggled(bool)), this, SLOT(pressPowerButton(bool)));
+
+    //progress bar for battery
+    connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBattery(int)));
+    connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::setBattery);
 
     // connections of signal-slots cycle
     connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
@@ -35,10 +42,9 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::pressPowerButton(bool checked)
+void MainWindow::pressPowerButton()
 {
-    if (checked) powerOn();
-    else powerOff();
+   powerOn();
 }
 
 void MainWindow::powerOn()
@@ -47,10 +53,62 @@ void MainWindow::powerOn()
     analyze();   // test purpose, step 4 goes first
 }
 
+//CURRENTLY NOT IN USE
 void MainWindow::powerOff()
 {
     qDebug() << "Power off!";
 }
+
+void MainWindow::setBattery(int v){
+
+    ui->battery->setValue(v);
+    qInfo("battery from AED is: %d", v);
+
+}
+
+//void MainWindow::electrodeConnected(){
+
+
+//}
+
+void MainWindow::updateBattery(int v){
+
+    v = ui->battery->value();
+    theAEDPlus->setBattery(v);
+    qInfo("battery is: %d", v);
+
+}
+
+//void MainWindow::checkBattery(){
+
+//    int v = ui->battery->value();
+//    aedObj.setBattery(v);
+//    qInfo("battery is: %d", v);
+
+//}
+
+
+void MainWindow::on_increase_clicked()
+{
+    int value = ui->battery->value();
+    qInfo("value: %d", value);
+    value+=1;
+    ui->battery->setValue(value);
+    qInfo("Increased to: %d", value);
+}
+
+
+void MainWindow::on_decrease_clicked()
+{
+
+    int value = ui->battery->value();
+    qInfo("value: %d", value);
+    value-=1;
+    ui->battery->setValue(value);
+    qInfo("Decreased to: %d", value);
+
+}
+
 
 void MainWindow::analyzeHeartRhythm()
 {

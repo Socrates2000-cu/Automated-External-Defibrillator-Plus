@@ -17,12 +17,28 @@ public:
 
     // features in the cycle
     void analyzeAndDecideShock();
+    void power();
+    bool isPowered();
+    bool selfTest();
+
+    void connectElectrode(Electrode*);
+
+    //bool electrodeConnected();
+    //void setConnection(bool state);
+    bool hasBattery();
+    int currBattery();
+    void chargeBattery();
+    void consumeBattery(int);
+    void setBattery(int b);
+    void updateBattery(int b);
 
 
 public slots:
     void deliverShock();
 
 signals:
+    void updateFromAED(int b);
+    void checkElectrode();
     void shockable();
 
 private:
@@ -30,12 +46,13 @@ private:
     bool isShockAdvised();
     void charge();
 
+    bool powered;
     int batteryLevel;
     int numOfShocks;  // the number of shocks delivered
     int shockAmount; //the amount of shock in Joul to be delivered (prev?)
     QElapsedTimer elapsedTime;  // the elapsed time in seconds
-
     Electrode* electrode;
+
 };
 
 #endif // AED_H
