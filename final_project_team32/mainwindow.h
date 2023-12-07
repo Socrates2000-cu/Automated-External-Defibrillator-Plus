@@ -5,6 +5,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QPushButton>
+#include <QEventLoop>
 #include "AED.h"
 
 QT_BEGIN_NAMESPACE
@@ -21,6 +22,8 @@ public:
 
 public slots:
     void shockable();
+    void CPRFeedback(QString feedBack, float cprDepth);
+    void waitForGuiChange(int milliseconds);
 
 private:
     void printVoicePromptToDisplay(QString prompt);
@@ -31,10 +34,13 @@ private:
 
     Ui::MainWindow *ui;
     AED* theAEDPlus;
+    QEventLoop eventLoop;
 
 private slots:
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
+    void testDeliverCPR();
+    void updateCPRDepth(const QString &text);
 
     void pressPowerButton(bool checked);
     void testButPressed();

@@ -61,3 +61,71 @@ void AED::deliverShock()
     ++numOfShocks;
 }
 
+void AED::deliverCPR()
+{
+    qDebug() << "Delivering CPR feedback ";
+//    QElapsedTimer timer;
+    QString feedBack = "";
+
+    qDebug() << "current cpr depth: " << electrode->getCompressionDepth();
+    int d = analayzeCPRDepth(electrode->getCompressionDepth());
+    if (d == 0) {
+        //display good cpr
+        feedBack = "Good CPR!";
+    } else if (d < 0) {
+        //display push harder
+        feedBack = "Push harder";
+    } else {
+        feedBack = "Push slower";
+    }
+
+    CPRFeedback(feedBack, electrode->getCompressionDepth());
+
+    if (d != 0) {
+
+        //wait before getting new updateCPRDepth
+//        wait(5);
+        waitForGuiChange(5000);
+
+        qDebug() << "updated cpr depth: " << electrode->getCompressionDepth();
+        //get updated value
+        d = analayzeCPRDepth(electrode->getCompressionDepth());
+    }
+    //2 breathes
+
+
+    qDebug() << "Delivered CPR feedback ";
+}
+
+int AED::analayzeCPRDepth(float d)
+{
+    float minDepth = 5.08; //cm
+    float maxDepth = 6.04;
+
+    QString age = electrode->getPatient()->getAgeStage();
+    qDebug() << "age: " << age;
+    if (age != "adult") {
+        minDepth = 4.99;
+        maxDepth = 5.04;
+    }
+
+    if (d < minDepth) {
+        return -1;
+    } else if (d > maxDepth) {
+        return 1;
+    }else {
+        return 0;
+    }
+
+}
+
+void AED::wait(int sec)
+{
+    qint64 waitTimeInMs = sec * 1000;
+
+    QElapsedTimer timer;
+    timer.start();
+    qDebug() << "started waiting for " << sec << " secs";
+    while (timer.elapsed() < waitTimeInMs);
+    qDebug() << "finished wating" ;
+}

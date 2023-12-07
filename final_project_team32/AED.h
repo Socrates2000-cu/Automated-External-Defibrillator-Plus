@@ -21,9 +21,13 @@ public:
 
 public slots:
     void deliverShock();
+    void deliverCPR();
 
 signals:
     void shockable();
+    void CPRFeedback(QString feedBack, float cprDepth);
+    void waitForGuiChange(int);
+
 
 private:
 
@@ -36,6 +40,8 @@ private:
     QElapsedTimer elapsedTime;  // the elapsed time in seconds
 
     Electrode* electrode;
+    int analayzeCPRDepth(float);
+    void wait(int sec);
 };
 
 #endif // AED_H

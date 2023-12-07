@@ -14,6 +14,8 @@ public:
     Patient* getPatient();
     void setPatient(Patient*);
     bool hasProperlyConnectedToPatient();
+    void setCompressionDepth(float d);
+    float getCompressionDepth();
 
 private:
     float compressionDepth;  // in cm or inches
