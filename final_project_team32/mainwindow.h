@@ -27,15 +27,18 @@ public slots:
     void CPRFeedback(QString feedBack, float cprDepth);
     void waitForGuiChange(int milliseconds);
 
+    void updateNumOfShocks(int num);
 
 private:
-    void printVoicePromptToDisplay(QString prompt);
 
     void powerOn();  // start the cycle after power on
     //void powerOff();
     bool isPowered();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
     void displayPrompt(QString input);
+    void displayEcgPic();
+    void clearDisplay();
+    void nonBlockingSleep(int seconds);
 
     Ui::MainWindow *ui;
     bool powered;
@@ -53,8 +56,7 @@ private slots:
     void powerOff();
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
-    //void electrodeConnected();
-    //void checkBattery();
+
     void setBattery(int v);
     void updateBattery(int v);
     void on_increase_clicked();
@@ -62,13 +64,11 @@ private slots:
 
     void attachPads();  //step3
     void connectedChest(); //step3
-    void setEcgpic();
     void deliverCPR();
     void updateCPRDepth(const QString &text);
 
 
 signals:
-    void attach();  // step 1,2 -> step 3
     void analyze();  // step 3 -> step 4
 };
 

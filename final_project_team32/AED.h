@@ -29,7 +29,6 @@ public:
     //void setConnection(bool state);
     bool hasBattery();
     int currBattery();
-    void chargeBattery();
     void consumeBattery(int);
     void setBattery(int b);
     void updateBattery(int b);
@@ -38,6 +37,7 @@ public:
 public slots:
     void deliverShock();
     void deliverCPR();
+    void chargeBattery();
 
 signals:
     void powerOffFromAED();
@@ -47,6 +47,8 @@ signals:
     void attach();
     void CPRFeedback(QString feedBack, float cprDepth);
     void waitForGuiChange(int);
+    void cpr();
+    void updateNumOfShocks(int);
 
 
 private:
