@@ -162,6 +162,20 @@ void MainWindow::printVoicePromptToDisplay(QString prompt)
 }
 
 void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
+    if (indicator->objectName() == "deliverShock") {
+        if (on) {
+            indicator->setStyleSheet("image: none;");
+            indicator->setStyleSheet("image: url(:/changed_red_deliver_shock.jpg);"
+                                     "background-color: grey;"
+                                     "border:none;");
+        } else {
+            indicator->setStyleSheet("image: none;");
+            indicator->setStyleSheet("image: url(:/deliver_shock.jpg);"
+                                     "background-color: grey;"
+                                     "border:none;");
+        }
+        return;
+    }
     if (on) indicator->setStyleSheet("background-color: red;border-style: solid;border-width: 1px;border-radius: 10px;max-width: 20px;max-height: 20px;min-width: 20px;min-height: 20px;");
     else indicator->setStyleSheet("background-color: grey;border-style: solid;border-width: 1px;border-radius: 10px;max-width: 20px;max-height: 20px;min-width: 20px;min-height: 20px;");
     //TODO else turn it off style
