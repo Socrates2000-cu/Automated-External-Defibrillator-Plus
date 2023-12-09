@@ -19,13 +19,14 @@ MainWindow::MainWindow(QWidget *parent)
     electrode = new Electrode();
     if(ui->checkBox_pad_aed->isChecked()) theAEDPlus->connectElectrode(electrode);
 
-
+    powered=false;
     //for test --> turn indicator1 into red (now not working because the button is disabled at beginning)
     //connect(ui->deliverShock, SIGNAL(released()), this, SLOT(testButPressed()));
 
     //Power button
-    connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
+    //connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
     connect(ui->powerButton, &QPushButton::clicked, this, &MainWindow::pressPowerButton);
+    connect(theAEDPlus, &AED::powerOffFromAED, this, &MainWindow::powerOff);
 
     ui->deliverShock->setEnabled(false); // disabled by default
 
@@ -48,22 +49,35 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
+bool MainWindow::isPowered(){
+    return powered;
+}
 void MainWindow::pressPowerButton()
 {
-   powerOn();
+   if(isPowered()==false){
+       powerOn();
+   }
+   else{
+       powerOff();
+   }
 }
-
 void MainWindow::powerOn()
 {
     qDebug() << "Power on!";
+     theAEDPlus->powerOn();
+    ui->increase->setEnabled(false);
+    ui->decrease->setEnabled(false);
+    //analyze() might have to move somewhere that ensures it only happens after the self test
     analyze();   // test purpose, step 4 goes first
 }
 
 //CURRENTLY NOT IN USE
+//can be called from AED or MW if we decide
 void MainWindow::powerOff()
 {
+    //power off sequence of turning off LEDs or anything else
     qDebug() << "Power off!";
+
 }
 
 void MainWindow::setBattery(int v){
@@ -85,15 +99,6 @@ void MainWindow::updateBattery(int v){
     qInfo("battery is: %d", v);
 
 }
-
-//void MainWindow::checkBattery(){
-
-//    int v = ui->battery->value();
-//    aedObj.setBattery(v);
-//    qInfo("battery is: %d", v);
-
-//}
-
 
 void MainWindow::on_increase_clicked()
 {

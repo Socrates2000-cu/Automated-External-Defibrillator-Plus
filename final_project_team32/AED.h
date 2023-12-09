@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QElapsedTimer>
 #include "Electrode.h"
+#include "QTimer"
 
 class AED: public QObject {
 
@@ -17,8 +18,9 @@ public:
 
     // features in the cycle
     void analyzeAndDecideShock();
-    void power();
-    bool isPowered();
+    void powerOn();
+    void powerOff(); //may or may not use
+    //bool isPowered();
     bool selfTest();
 
     void connectElectrode(Electrode*);
@@ -37,6 +39,7 @@ public slots:
     void deliverShock();
 
 signals:
+    void powerOffFromAED();
     void updateFromAED(int b);
     void checkElectrode();
     void shockable();
@@ -46,7 +49,7 @@ private:
     bool isShockAdvised();
     void charge();
 
-    bool powered;
+    //bool powered;
     int batteryLevel;
     int numOfShocks;  // the number of shocks delivered
     int shockAmount; //the amount of shock in Joul to be delivered (prev?)

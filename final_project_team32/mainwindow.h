@@ -28,14 +28,18 @@ private:
     void printVoicePromptToDisplay(QString prompt);
 
     void powerOn();  // start the cycle after power on
-    void powerOff();
+    //void powerOff();
+    bool isPowered();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
     void displayPrompt(QString input);
     Ui::MainWindow *ui;
     AED* theAEDPlus;
     Electrode* electrode;
+    bool powered;
 
 private slots:
+
+    void powerOff();
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
     //void electrodeConnected();

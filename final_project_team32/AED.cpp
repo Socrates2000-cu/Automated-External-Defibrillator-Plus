@@ -2,52 +2,51 @@
 #include <QDebug>
 
 AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
-    electrode = new Electrode();
+    //electrode = new Electrode();
     elapsedTime.start(); //start elapsed timer
 }
 
 AED::~AED() {
-    delete electrode;
+    //delete electrode;
 }
 
-void AED::power(){
+void AED::powerOn(){
 
-    if(!isPowered()){
-        //turn on
-        powered = true;
-        //visual prompt
+//    if(!isPowered()){
+//        //turn on
+//        powered = true;
+//        //visual prompt
         qInfo("Starting AED...");
         //audio prompt
         //initiate self-test
         if(selfTest()){
-
-            //this tests updating battery as AED runs
-            batteryLevel-=2;
-            qInfo("Battery: %d", batteryLevel);
-            int b =batteryLevel;
-            updateBattery(b);
+            qInfo("STAY CALM.");
+            qInfo("CHECK RESPONSIVENESS.");
             qInfo("Calling emergency services...");
             //timer
             //next signal or function initiating electrodePad
         }
         else{
-           //TIMER
-            power();
+            //power off AED from AEDplus
+            //power off MW
+           QTimer::singleShot(5000, [this](){
+             powerOff();
+           });
         }
 
-    }
-   else{
-        //prompts for shutting off
-        qInfo("Shutting down...");
-        //turn LEDsoff
-        //indefinite sleep?
-        powered = false;
-    }
 }
+//   else{
+//        //prompts for shutting off
+//        qInfo("Shutting down...");
+//        //turn LEDsoff
+//        //indefinite sleep?
+//        powered = false;
+//    }
+//}
 
-
-bool AED::isPowered(){
-    return powered;
+void AED::powerOff(){
+    //whatever we decide should happen
+    emit powerOffFromAED();
 }
 
 
@@ -69,14 +68,6 @@ bool AED::selfTest(){
     return false;
 }
 
-//bool AED::electrodeConnected(){
-//    emit checkElectrode();
-//    return connected;
-//}
-
-//void AED::setConnection(bool state){
-//    connected=state;
-//}
 
 void AED::connectElectrode(Electrode* electrode){
     this->electrode = electrode;
@@ -88,7 +79,7 @@ Electrode* AED::getElectrode(){
 
 bool AED::hasBattery(){
 
-    if(currBattery()<20){
+    if(currBattery()<10){
         batteryLevel=false;
     }
     else{
