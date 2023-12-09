@@ -2,12 +2,10 @@
 #include <QDebug>
 
 AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
-    //electrode = new Electrode();
     elapsedTime.start(); //start elapsed timer
 }
 
 AED::~AED() {
-    //delete electrode;
 }
 
 void AED::powerOn(){
@@ -53,7 +51,7 @@ void AED::powerOff(){
 
 bool AED::selfTest(){
     qInfo("Self test init");
-    qDebug() << "electrode:" << getElectrode();
+
     if((getElectrode()!=nullptr) && hasBattery()){//add battery condition
         qInfo("UNIT OK.");
         return true;
@@ -80,18 +78,10 @@ Electrode* AED::getElectrode(){
 }
 
 bool AED::hasBattery(){
-
-    if(currBattery()<10){
-        batteryLevel=false;
-    }
-    else{
-        batteryLevel=true;
-    }
-    return batteryLevel;
+    return batteryLevel >= 10;
 }
 
 int AED::currBattery(){
-   // emit checkBattery();
     return batteryLevel;
 }
 
