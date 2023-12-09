@@ -52,6 +52,7 @@ void AED::powerOff(){
 
 bool AED::selfTest(){
     qInfo("Self test init");
+    qDebug() << "electrode:" << getElectrode();
     if((getElectrode()!=nullptr) && hasBattery()){//add battery condition
         qInfo("UNIT OK.");
         return true;
@@ -118,13 +119,13 @@ bool AED::isShockAdvised() {
 void AED::analyzeAndDecideShock()
 {
     if (electrode == nullptr) {
-        qDebug() << "Warning! The electrode is not connected.";
+        qDebug() << "Warning! The electrode is not connected to AED.";
         return;  //TODO what else should do
     }
 
     Patient* patient = electrode->getPatient();
     if (patient == nullptr) {
-        qDebug() << "Warning! The electrode is not attached.";
+        qDebug() << "Warning! The electrode pad is not attached to the patient's chest correctly.";
         return;
     }
 

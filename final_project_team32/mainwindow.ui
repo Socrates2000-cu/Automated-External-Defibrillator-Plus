@@ -157,10 +157,13 @@
     </property>
    </widget>
    <widget class="QPushButton" name="powerButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>790</x>
-      <y>390</y>
+      <y>410</y>
       <width>81</width>
       <height>41</height>
      </rect>
@@ -207,8 +210,8 @@ border:none;</string>
    <widget class="QPushButton" name="adultChild">
     <property name="geometry">
      <rect>
-      <x>920</x>
-      <y>410</y>
+      <x>910</x>
+      <y>430</y>
       <width>101</width>
       <height>51</height>
      </rect>
@@ -246,7 +249,7 @@ border:none;</string>
       <x>750</x>
       <y>30</y>
       <width>301</width>
-      <height>351</height>
+      <height>373</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayout">
@@ -267,7 +270,12 @@ border:none;</string>
       <widget class="QComboBox" name="health">
        <item>
         <property name="text">
-         <string>PEA</string>
+         <string>V_FIB</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>V_TACH</string>
         </property>
        </item>
        <item>
@@ -277,12 +285,7 @@ border:none;</string>
        </item>
        <item>
         <property name="text">
-         <string>V_FIB</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>V_TACH</string>
+         <string>PEA</string>
         </property>
        </item>
       </widget>
@@ -298,6 +301,11 @@ border:none;</string>
       <widget class="QComboBox" name="age">
        <item>
         <property name="text">
+         <string>Adult</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>Child</string>
         </property>
        </item>
@@ -306,39 +314,17 @@ border:none;</string>
          <string>Infant</string>
         </property>
        </item>
-       <item>
-        <property name="text">
-         <string>Adult</string>
-        </property>
-       </item>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>pads connected to AED</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QCheckBox" name="checkBox_pad_aed">
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>pads placed on chest</string>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="1">
-      <widget class="QCheckBox" name="connectChest">
+      <widget class="QCheckBox" name="connectAED">
        <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
        </property>
@@ -348,47 +334,71 @@ border:none;</string>
       </widget>
      </item>
      <item row="4" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>pads placed on chest</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QCheckBox" name="connectChest">
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
         <string>battery</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QProgressBar" name="battery">
        <property name="value">
         <number>24</number>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <widget class="QPushButton" name="increase">
        <property name="text">
         <string>+</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>compression depth(cm)</string>
-       </property>
-      </widget>
-     </item>
      <item row="6" column="1">
-      <widget class="QLineEdit" name="lineEdit">
-       <property name="text">
-        <string>2</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
       <widget class="QPushButton" name="decrease">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="text">
         <string>-</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>compression depth(cm)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLineEdit" name="lineEdit">
+       <property name="text">
+        <string>2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QPushButton" name="confirm_patient">
+       <property name="text">
+        <string>Confirm Patient</string>
        </property>
       </widget>
      </item>

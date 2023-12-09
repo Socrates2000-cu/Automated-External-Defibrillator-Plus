@@ -32,13 +32,19 @@ private:
     bool isPowered();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
     void displayPrompt(QString input);
+
     Ui::MainWindow *ui;
+    bool powered;
+
     AED* theAEDPlus;
     Electrode* electrode;
-    bool powered;
+    Patient* patient;
 
 private slots:
 
+    void changeElectrodeConnection(bool);
+    void changePatientAttach(bool);
+    void confirmInitialization();
     void powerOff();
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
@@ -49,16 +55,14 @@ private slots:
     void on_increase_clicked();
     void on_decrease_clicked();
 
-
-    void testButPressed();
-
     void attachPads();  //step3
     void connectedChest(); //step3
     void setEcgpic();
 
 
 signals:
-    void analyze();
+    void attach();  // step 1,2 -> step 3
+    void analyze();  // step 3 -> step 4
 };
 
 #endif // MAINWINDOW_H

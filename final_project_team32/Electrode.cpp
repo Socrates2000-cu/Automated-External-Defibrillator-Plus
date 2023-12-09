@@ -1,15 +1,25 @@
 #include "Electrode.h"
 
-Electrode::Electrode(Patient* p) : compressionDepth(0), patient(p) {
+Electrode::Electrode() : compressionDepth(0) {
 
+}
+
+double Electrode::getCompressionDepth()
+{
+    return compressionDepth;
 }
 
 Patient* Electrode::getPatient() {
     return patient;
 }
 
-void Electrode::setPatient(Patient* p) {
-    patient = p;
+void Electrode::setCompressionDepth(double depth)
+{
+    compressionDepth = depth;
+}
+
+void Electrode::attachPatient(Patient* patient) {
+    this->patient = patient;
 }
 
 bool Electrode::hasProperlyConnectedToPatient() {

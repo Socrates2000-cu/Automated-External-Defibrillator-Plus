@@ -9,14 +9,19 @@ class Electrode: public QObject {
     Q_OBJECT
 
 public:
-    Electrode(Patient* p=nullptr);
+    Electrode();
 
+    double getCompressionDepth();
     Patient* getPatient();
-    void setPatient(Patient*);
+
+    void attachPatient(Patient*);
     bool hasProperlyConnectedToPatient();
 
+public slots:
+    void setCompressionDepth(double depth);
+
 private:
-    float compressionDepth;  // in cm or inches
+    double compressionDepth;  // in cm or inches
     // no need to specify different types of pads (adult, child)
     Patient* patient;
 

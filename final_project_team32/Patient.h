@@ -2,20 +2,30 @@
 #define PATIENT_H
 
 #include <QObject>
+#include <QThread>
+#include <QMutex>
 
 class Patient: public QObject {
 
     Q_OBJECT
 
 public:
-    Patient(QString ageStage = "adult", QString ecgWave = "V_TACH");
-// V_TACH,V_FIB,PEA,ASYSTOLE
+    Patient(QString ageStage, QString ecgWave);
+    ~Patient();
+
     QString getAgeStage();
     QString getEcgWave();
 
+public slots:
+    void setAgeStage(QString newAge);
+    void setEcgWave(QString newEcgWave);
+
 private:
-    QString ageStage;
-    QString ecgWave;
+    std::unique_ptr<QThread> thread;
+    QMutex mutex;
+
+    QString ageStage;  // adult, child, infant
+    QString ecgWave;  // V_TACH, V_FIB, PEA, ASYSTOLE
 };
 
 #endif // PATIENT_H
