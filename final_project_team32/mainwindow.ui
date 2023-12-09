@@ -534,6 +534,19 @@ background:white;</string>
      <string/>
     </property>
    </widget>
+   <widget class="QPushButton" name="testCPR">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>550</y>
+      <width>83</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TestCPR</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

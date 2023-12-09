@@ -12,11 +12,13 @@ MainWindow::MainWindow(QWidget *parent):
     powered(false)
 {
     ui->setupUi(this);
+//    makeCPRDepthFieldReadOnly(true);
 
     // initialize AED and Electrode (pad)
     theAEDPlus = new AED();
     electrode = new Electrode();
     if(ui->connectAED->isChecked()) theAEDPlus->connectElectrode(electrode);
+    electrode->setCompressionDepth(ui->lineEdit->text().toDouble());
 
     // disable power button and shock button at the beginning
     ui->powerButton->setEnabled(false);
@@ -50,6 +52,12 @@ MainWindow::MainWindow(QWidget *parent):
     connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
     connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> this shockable()
     connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));  // shock button pressed -> this deliverShock()
+
+    //delivering CPR (step 5)
+    connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));
+    connect(theAEDPlus, SIGNAL(CPRFeedback(QString, float)), this, SLOT(CPRFeedback(QString, float))); // AED signal CPRFeedback(QString, float) -> this CPRFeedback(QString, float)
+    connect(ui->lineEdit, SIGNAL(textChanged(const QString &)), this, SLOT(updateCPRDepth(const QString &)));
+    connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
 }
 
 MainWindow::~MainWindow()
@@ -292,3 +300,53 @@ void MainWindow::displayPrompt(QString input){
     layout1->addWidget(label,0,Qt::AlignCenter);
 
 }
+
+void MainWindow::deliverCPR()
+{
+    qDebug() << "Starting CPR";
+    indicatorLightFlash(ui->indicator5, true);
+    theAEDPlus->deliverCPR();
+    indicatorLightFlash(ui->indicator5, false);
+    qDebug() << "finished CPR";
+}
+
+void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
+{
+    qDebug() << " updating display for cpr feedback";
+    //TODO: use function to change it
+    ui->textDisplay->setText(feedBack);
+    QString depth = "Depth: " + QString::number(cprDepth) + " cm";
+
+    //set compresssion depth info
+    QTextCursor cursor = ui->textEdit_4->textCursor();
+    cursor.movePosition(QTextCursor::Start);
+    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+    cursor.insertText(depth);
+
+    qDebug() << " finished updating display for cpr feedback";
+}
+
+void MainWindow::updateCPRDepth(const QString &text)
+{
+    try {
+        double depth = text.toFloat();
+        theAEDPlus->getElectrode()->setCompressionDepth(depth);
+        eventLoop.quit();
+    }  catch (const std::exception& e) {
+        qDebug() << "exception occured while convertin cpr depth into float";
+    }
+
+}
+
+void MainWindow::waitForGuiChange(int milliseconds)
+{
+    QTimer* timer = new QTimer(this);
+    timer->setSingleShot(true);
+
+    connect(timer, &QTimer::timeout, &eventLoop, [=](){qDebug() << "timer out!"; eventLoop.quit();});
+    timer->start(milliseconds);
+    eventLoop.exec();
+
+    delete timer;
+}
+

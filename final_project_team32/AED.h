@@ -37,6 +37,7 @@ public:
 
 public slots:
     void deliverShock();
+    void deliverCPR();
 
 signals:
     void powerOffFromAED();
@@ -44,12 +45,11 @@ signals:
     void checkElectrode();
     void shockable();
     void attach();
+    void CPRFeedback(QString feedBack, float cprDepth);
+    void waitForGuiChange(int);
+
 
 private:
-
-    bool isShockAdvised();
-    void charge();
-
     //bool powered;
     int batteryLevel;
     int numOfShocks;  // the number of shocks delivered
@@ -57,6 +57,8 @@ private:
     QElapsedTimer elapsedTime;  // the elapsed time in seconds
     Electrode* electrode;
 
+    int analayzeCPRDepth(double);
+    void doCompressions(int numberOfCompressions);
 };
 
 #endif // AED_H

@@ -1,5 +1,6 @@
 #include "AED.h"
 #include <QDebug>
+#include <QThread>
 
 AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
     elapsedTime.start(); //start elapsed timer
@@ -103,9 +104,6 @@ void AED::consumeBattery(int b){
     updateBattery(newBattery);
 
 }
-bool AED::isShockAdvised() {
-    return false; //TODO
-}
 
 void AED::analyzeAndDecideShock()
 {
@@ -145,3 +143,93 @@ void AED::deliverShock()
     ++numOfShocks;
 }
 
+void AED::deliverCPR()
+{
+    qDebug() << " Started Delivering CPR ";
+
+    QElapsedTimer timer;
+    timer.start();
+
+    qint64 cprTime = 2 * 60 * 1000/4; //2 minutes
+    int c = 0;
+    while(timer.elapsed() < cprTime) {
+        qDebug() << "starting compressions";
+        doCompressions(5);
+        qDebug() << "finished compressions";
+        waitForGuiChange(5000);
+
+        //2 breathes
+        CPRFeedback("Give one breath", 0);
+        waitForGuiChange(5000);
+        CPRFeedback("Give another breath", 0);
+        waitForGuiChange(5000);
+
+        qDebug() << "\n\n";
+        c++;
+    }
+    CPRFeedback("Stop CPR", 0);
+    waitForGuiChange(1000);
+    qDebug() << " did " << c << " cycle of compressions";
+
+
+    qDebug() << "Finished Delivering CPR ";
+}
+
+int AED::analayzeCPRDepth(double d)
+{
+    double minDepth = 5.08; //cm
+    double maxDepth = 6.04;
+
+    QString age = electrode->getPatient()->getAgeStage();
+    qDebug() << "age: " << age;
+    if (age != "adult") {
+        minDepth = 4.99;
+        maxDepth = 5.04;
+    }
+
+    if (d < minDepth) {
+        return -1;
+    } else if (d > maxDepth) {
+        return 1;
+    }else {
+        return 0;
+    }
+
+}
+
+void AED::doCompressions(int numberOfCompressions)
+{
+    QString feedBack = "";
+
+    qDebug() << "current cpr depth: " << electrode;//->getCompressionDepth();
+    int d = analayzeCPRDepth(electrode->getCompressionDepth());
+
+    int cpr = 0;
+    for (; cpr < numberOfCompressions; ++cpr) {
+        if (d == 0) {
+            //display good cpr
+            feedBack = "Good CPR!";
+        } else if (d < 0) {
+            //display push harder
+            feedBack = "Push harder";
+        } else {
+            feedBack = "Push slower";
+        }
+
+        qDebug() << "current cpr depth: " << QString::number(cpr) << " " << electrode->getCompressionDepth();
+        CPRFeedback(feedBack + " " + QString::number(cpr), electrode->getCompressionDepth());
+        waitForGuiChange(2000);
+
+        if (d != 0) {
+
+            //wait before getting new updateCPRDepth
+            waitForGuiChange(10000);
+
+            qDebug() << "updated cpr depth: " << electrode->getCompressionDepth();
+        }
+        d = analayzeCPRDepth(electrode->getCompressionDepth());
+    }
+    qDebug() << "Delivered " << cpr << " compressions";
+
+
+}

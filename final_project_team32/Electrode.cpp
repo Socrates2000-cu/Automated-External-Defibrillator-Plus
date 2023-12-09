@@ -1,4 +1,5 @@
 #include "Electrode.h"
+#include <QDebug>
 
 Electrode::Electrode() : compressionDepth(0) {
 
@@ -25,3 +26,4 @@ void Electrode::attachPatient(Patient* patient) {
 bool Electrode::hasProperlyConnectedToPatient() {
     return patient != nullptr;
 }
+
