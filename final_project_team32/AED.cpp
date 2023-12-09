@@ -25,6 +25,7 @@ void AED::powerOn(){
             qInfo("Calling emergency services...");
             //timer
             //next signal or function initiating electrodePad
+            emit attach();
         }
         else{
             //power off AED from AEDplus

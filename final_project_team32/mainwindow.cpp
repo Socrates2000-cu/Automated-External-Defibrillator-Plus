@@ -41,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent):
     connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::setBattery);
 
     // connections of attaching pad (step 3)
-    connect(this, SIGNAL(attach()), this, SLOT(attachPads()));  // signal attach() -> attachPads()
+    connect(theAEDPlus, SIGNAL(attach()), this, SLOT(attachPads()));  // signal attach() -> attachPads()
     connect(ui->testButton, SIGNAL(released()), this, SLOT(attachPads())); //for test: simulate receiving the signal from the second step(i.e., indicator 2)
     connect(ui->connectChest, SIGNAL(clicked(bool)), this, SLOT(connectedChest())); //checkbox for connected to chest
     connect(ui->testButton2, SIGNAL(released()), this, SLOT(setEcgpic()));
@@ -217,7 +217,7 @@ void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
         }
         return;
     }
-    qDebug()<< "not deliver shock button";
+
     if (on) indicator->setStyleSheet("background-color: red;border-style: solid;border-width: 1px;border-radius: 10px;max-width: 20px;max-height: 20px;min-width: 20px;min-height: 20px;");
     else indicator->setStyleSheet("background-color: grey;border-style: solid;border-width: 1px;border-radius: 10px;max-width: 20px;max-height: 20px;min-width: 20px;min-height: 20px;");
     //TODO else turn it off style

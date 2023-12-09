@@ -43,6 +43,7 @@ signals:
     void updateFromAED(int b);
     void checkElectrode();
     void shockable();
+    void attach();
 
 private:
 
