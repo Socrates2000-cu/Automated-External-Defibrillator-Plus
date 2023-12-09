@@ -103,15 +103,12 @@ void AED::consumeBattery(int b){
     updateBattery(newBattery);
 
 }
-bool AED::isShockAdvised() {
-    return false; //TODO
-}
 
 void AED::analyzeAndDecideShock()
 {
     if (electrode == nullptr) {
         qDebug() << "Warning! The electrode is not connected to AED.";
-        return;  //TODO what else should do
+        return;
     }
 
     Patient* patient = electrode->getPatient();
@@ -133,9 +130,11 @@ void AED::analyzeAndDecideShock()
             else if (numOfShocks == 1) shockAmount = 70;
             else shockAmount = 85;
         }
-        shockable();
+        qInfo() << ecgWave << "detected. Shock is advised.";
+        emit shockable();  // signal -> MainWindow shockable() enable shock delivery button
     } else if (ecgWave == "PEA" || ecgWave == "ASYSTOLE") {
-        qDebug() << "No shock advised.";
+        qInfo() << "No shock advised.";
+        emit cpr();
     }
 }
 
@@ -143,5 +142,8 @@ void AED::deliverShock()
 {
     qDebug() << "Shock at" << shockAmount << "J delivered.";
     ++numOfShocks;
+
+    emit updateNumOfShocks(numOfShocks); // reflect num of shocks in display
+    emit cpr();
 }
 

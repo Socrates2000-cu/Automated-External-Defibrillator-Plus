@@ -29,7 +29,6 @@ public:
     //void setConnection(bool state);
     bool hasBattery();
     int currBattery();
-    void chargeBattery();
     void consumeBattery(int);
     void setBattery(int b);
     void updateBattery(int b);
@@ -37,18 +36,18 @@ public:
 
 public slots:
     void deliverShock();
+    void chargeBattery();
 
 signals:
     void powerOffFromAED();
     void updateFromAED(int b);
     void checkElectrode();
-    void shockable();
-    void attach();
+    void attach();  // step 2 -> step 3
+    void shockable();  // step 4
+    void cpr();
+    void updateNumOfShocks(int);
 
 private:
-
-    bool isShockAdvised();
-    void charge();
 
     //bool powered;
     int batteryLevel;
