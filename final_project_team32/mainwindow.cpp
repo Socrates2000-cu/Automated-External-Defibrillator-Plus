@@ -327,11 +327,6 @@ void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
 
 void MainWindow::waitForGuiChange(int milliseconds)
 {
-    QTime timeout = QTime::currentTime().addMSecs(milliseconds);
-    while (QTime::currentTime() < timeout)
-        QCoreApplication::processEvents(QEventLoop::AllEvents);
-
-/*
     QTimer* timer = new QTimer(this);
     timer->setSingleShot(true);
 
@@ -343,7 +338,7 @@ void MainWindow::waitForGuiChange(int milliseconds)
     eventLoop.exec();
 
     delete timer;
-*/
+
 }
 
 void MainWindow::clearDisplay() {
