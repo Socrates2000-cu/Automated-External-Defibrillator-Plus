@@ -24,6 +24,7 @@ public:
 
 public slots:
     void shockable();
+    void nonShockable();
     void CPRFeedback(QString feedBack, float cprDepth);
     void waitForGuiChange(int milliseconds);
 
@@ -32,8 +33,6 @@ public slots:
 private:
 
     void powerOn();  // start the cycle after power on
-    //void powerOff();
-    bool isPowered();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
     void displayPrompt(QString input);
     void displayEcgPic();
@@ -41,7 +40,6 @@ private:
     void nonBlockingSleep(int seconds);
 
     Ui::MainWindow *ui;
-    bool powered;
 
     AED* theAEDPlus;
     Electrode* electrode;
@@ -65,11 +63,11 @@ private slots:
     void attachPads();  //step3
     void connectedChest(); //step3
     void deliverCPR();
-    void updateCPRDepth(const QString &text);
 
 
 signals:
-    void analyze();  // step 3 -> step 4
+    void analyze();
+    void cpr();
 };
 
 #endif // MAINWINDOW_H

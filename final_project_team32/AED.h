@@ -11,28 +11,24 @@ class AED: public QObject {
     Q_OBJECT
 
 public:
-    AED();
+    AED(int batteryLevel);
     ~AED();
 
+    bool isPowered();
+    int getBattery();
     Electrode* getElectrode();
 
     // features in the cycle
     void analyzeAndDecideShock();
     void powerOn();
     void powerOff(); //may or may not use
-    //bool isPowered();
+
     bool selfTest();
-
     void connectElectrode(Electrode*);
-
-    //bool electrodeConnected();
-    //void setConnection(bool state);
     bool hasBattery();
-    int currBattery();
     void consumeBattery(int);
     void setBattery(int b);
     void updateBattery(int b);
-
 
 public slots:
     void deliverShock();
@@ -43,16 +39,16 @@ signals:
     void powerOffFromAED();
     void updateFromAED(int b);
     void checkElectrode();
-    void shockable();
     void attach();
+    void shockable();
+    void nonShockable();
     void CPRFeedback(QString feedBack, float cprDepth);
     void waitForGuiChange(int);
-    void cpr();
     void updateNumOfShocks(int);
 
 
 private:
-    //bool powered;
+    bool powered;
     int batteryLevel;
     int numOfShocks;  // the number of shocks delivered
     int shockAmount; //the amount of shock in Joul to be delivered (prev?)

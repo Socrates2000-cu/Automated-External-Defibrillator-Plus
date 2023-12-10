@@ -8,18 +8,18 @@
 
 
 MainWindow::MainWindow(QWidget *parent):
-    QMainWindow(parent), ui(new Ui::MainWindow),
-    powered(false)
+    QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 //    makeCPRDepthFieldReadOnly(true);
 
     // initialize AED and Electrode (pad)
-    theAEDPlus = new AED();
+    int initBatteryLevel = ui->battery->value();
+    theAEDPlus = new AED(initBatteryLevel);
     patient = nullptr;
     electrode = new Electrode();
     if(ui->connectAED->isChecked()) theAEDPlus->connectElectrode(electrode);
-    electrode->setCompressionDepth(ui->lineEdit->text().toDouble());
+    electrode->setCompressionDepth(ui->depth->text().toDouble());
 
     // disable power button and shock button at the beginning
     ui->powerButton->setEnabled(false);
@@ -31,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent):
     // connections of Electrode connections (to AED) and attachment (to chest)
     connect(ui->connectAED, SIGNAL(toggled(bool)), this, SLOT(changeElectrodeConnection(bool)));  // change state of AED-Electrode connection
     connect(ui->connectChest, SIGNAL(toggled(bool)), this, SLOT(changePatientAttach(bool)));  // change state of AED-Patient attachment
-    //connect(ui->, SIGNAL(valueChanged(double)), electrode, SLOT(setCompressionDepth(double)));
 
     // Power button
     //connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
@@ -50,17 +49,17 @@ MainWindow::MainWindow(QWidget *parent):
     // connections of analysis and shock delivery (step 4)
     connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
     connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> shockable()
-    connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));  // shock button pressed -> deliverShock()
-
-    //delivering CPR (step 5)
-    connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));
-    connect(theAEDPlus, SIGNAL(CPRFeedback(QString, float)), this, SLOT(CPRFeedback(QString, float))); // AED signal CPRFeedback(QString, float) -> this CPRFeedback(QString, float)
-    connect(ui->lineEdit, SIGNAL(textChanged(const QString &)), this, SLOT(updateCPRDepth(const QString &)));
-    connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
+    connect(theAEDPlus, SIGNAL(nonShockable()), this, SLOT(nonShockable()));  // AED signal nonShockable() -> nonShockable()
+    connect(ui->deliverShock, SIGNAL(clicked()), this, SLOT(deliverShock()));  // shock button pressed -> deliverShock()
     connect(theAEDPlus, SIGNAL(updateNumOfShocks(int)), this, SLOT(updateNumOfShocks(int)));
 
-    // connections of cpr (step 5)
-    // connect(theAEDPlus, SIGNAL(cpr()), this, SLOT());  // TODO cpr entry function
+    //delivering CPR (step 5)
+    connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));  // TODO delete after debugging
+    connect(this, SIGNAL(cpr()), this, SLOT(deliverCPR()));  // cpr entry function
+    connect(theAEDPlus, SIGNAL(CPRFeedback(QString, float)), this, SLOT(CPRFeedback(QString, float))); // AED signal CPRFeedback(QString, float) -> this CPRFeedback(QString, float)
+    connect(ui->depth, SIGNAL(valueChanged(double)), electrode, SLOT(setCompressionDepth(double)));
+    connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
+
 }
 
 MainWindow::~MainWindow()
@@ -69,9 +68,6 @@ MainWindow::~MainWindow()
     delete electrode;
     delete theAEDPlus;
     if (patient != nullptr) delete patient;
-}
-bool MainWindow::isPowered(){
-    return powered;
 }
 
 void MainWindow::confirmInitialization()
@@ -99,10 +95,9 @@ void MainWindow::confirmInitialization()
 
 void MainWindow::pressPowerButton()
 {
-    if (!powered){
+    if (!theAEDPlus->isPowered()){
         powerOn();
-    }
-    else{
+    } else{
         powerOff();
     }
 }
@@ -133,6 +128,7 @@ void MainWindow::powerOff()
 {
     //power off sequence of turning off LEDs or anything else
     qDebug() << "Power off!";
+    theAEDPlus->powerOff();
 
 }
 
@@ -178,24 +174,23 @@ void MainWindow::analyzeHeartRhythm()
     qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
     nonBlockingSleep(3);
 
+    displayEcgPic();  // update heart rhythm picture
+    indicatorLightFlash(ui->indicator4, false);  // turn indicator light off
+
     // call AED to analyze heart rhythm
     theAEDPlus->analyzeAndDecideShock();
-    displayEcgPic();  // update heart rhythm picture
-    nonBlockingSleep(1);
-
-    // turn indicator light off
-    indicatorLightFlash(ui->indicator4, false); // TODO when to power this off, after shock or before shock?
 }
 
 // AED decides shockable signal -> this SLOT shockable
 void MainWindow::shockable() {
-    // indicator light flashes, enable button
     indicatorLightFlash(ui->deliverShock);
-
     ui->deliverShock->setEnabled(true);
 }
 
-//TODO: simulate sleeper
+void MainWindow::nonShockable() {
+    cpr();
+}
+
 void MainWindow::deliverShock()
 {
     qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
@@ -214,11 +209,19 @@ void MainWindow::deliverShock()
 
     ui->deliverShock->setEnabled(false); // disabled again
     indicatorLightFlash(ui->deliverShock, false);
+
+    cpr();
 }
 
 void MainWindow::updateNumOfShocks(int num)
 {
-    ui->label_numShock_digit->setNum(num);
+    QString text = "Shocks: " + QString::number(num);
+
+    //set compresssion depth info
+    QTextCursor cursor = ui->textEdit_shocks->textCursor();
+    cursor.movePosition(QTextCursor::Start);
+    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+    cursor.insertText(text);
 }
 
 void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
@@ -262,7 +265,7 @@ void MainWindow::connectedChest(){
     //text prompt display
     ui->textDisplay->setText("");
 
-    emit analyze(); // trigger step 4
+    analyze(); // trigger step 4
 }
 
 //display ecg wave when analyzing
@@ -303,6 +306,8 @@ void MainWindow::deliverCPR()
     theAEDPlus->deliverCPR();
     indicatorLightFlash(ui->indicator5, false);
     qDebug() << "finished CPR";
+
+    analyze();
 }
 
 void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
@@ -320,28 +325,25 @@ void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
     qDebug() << " finished updating display for cpr feedback";
 }
 
-void MainWindow::updateCPRDepth(const QString &text)
-{
-    try {
-        double depth = text.toFloat();
-        theAEDPlus->getElectrode()->setCompressionDepth(depth);
-        eventLoop.quit();
-    }  catch (const std::exception& e) {
-        qDebug() << "exception occured while convertin cpr depth into float";
-    }
-
-}
-
 void MainWindow::waitForGuiChange(int milliseconds)
 {
+    QTime timeout = QTime::currentTime().addMSecs(milliseconds);
+    while (QTime::currentTime() < timeout)
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+
+/*
     QTimer* timer = new QTimer(this);
     timer->setSingleShot(true);
 
-    connect(timer, &QTimer::timeout, &eventLoop, [=](){qDebug() << "timer out!"; eventLoop.quit();});
+    connect(timer, &QTimer::timeout, &eventLoop, [=](){
+        //qDebug() << "timer out!";
+        eventLoop.quit();
+    });
     timer->start(milliseconds);
     eventLoop.exec();
 
     delete timer;
+*/
 }
 
 void MainWindow::clearDisplay() {

@@ -2,12 +2,17 @@
 #include <QDebug>
 #include <QThread>
 
-AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
+AED::AED(int batteryLevel) : powered(false), batteryLevel(batteryLevel),
+    numOfShocks(0), shockAmount(0) {
     elapsedTime.start(); //start elapsed timer
     electrode = nullptr;
 }
 
 AED::~AED() {
+}
+
+bool AED::isPowered() {
+    return powered;
 }
 
 void AED::powerOn(){
@@ -20,6 +25,7 @@ void AED::powerOn(){
         //audio prompt
         //initiate self-test
         if(selfTest()){
+            powered = true;
             qInfo("STAY CALM.");
             qInfo("CHECK RESPONSIVENESS.");
             qInfo("Calling emergency services...");
@@ -47,6 +53,7 @@ void AED::powerOn(){
 
 void AED::powerOff(){
     //whatever we decide should happen
+    powered = false;
     emit powerOffFromAED();
 }
 
@@ -83,7 +90,7 @@ bool AED::hasBattery(){
     return batteryLevel >= 10;
 }
 
-int AED::currBattery(){
+int AED::getBattery(){
     return batteryLevel;
 }
 
@@ -101,7 +108,7 @@ void AED::chargeBattery() {
 
 void AED::consumeBattery(int b){
 
-    int newBattery = currBattery()-b;
+    int newBattery = getBattery()-b;
     updateBattery(newBattery);
 
 }
@@ -121,6 +128,7 @@ void AED::analyzeAndDecideShock()
 
     QString age = patient->getAgeStage();
     QString ecgWave = patient->getEcgWave();
+    consumeBattery(5);
 
     if (ecgWave == "V_TACH" || ecgWave == "V_FIB") {  // shockable
         if (age == "Adult") {
@@ -133,10 +141,10 @@ void AED::analyzeAndDecideShock()
             else shockAmount = 85;
         }
         qInfo() << ecgWave << "detected. Shock is advised.";
-        emit shockable();  // signal -> MainWindow shockable() enable shock delivery button
+        shockable();  // signal -> MainWindow shockable() enable shock delivery button
     } else if (ecgWave == "PEA" || ecgWave == "ASYSTOLE") {
-        qInfo() << "No shock advised.";
-        emit cpr();
+        qInfo() << ecgWave << "detected. No shock advised.";
+        nonShockable();
     }
 }
 
@@ -144,9 +152,10 @@ void AED::deliverShock()
 {
     qDebug() << "Shock at" << shockAmount << "J delivered.";
     ++numOfShocks;
+    consumeBattery(20);
 
-    emit updateNumOfShocks(numOfShocks); // reflect num of shocks in display
-    emit cpr();
+    updateNumOfShocks(numOfShocks); // reflect num of shocks in display
+
 }
 
 void AED::deliverCPR()
@@ -177,20 +186,27 @@ void AED::deliverCPR()
     waitForGuiChange(1000);
     qDebug() << " did " << c << " cycle of compressions";
 
-
     qDebug() << "Finished Delivering CPR ";
 }
 
+/* age stage - depth inch - cm
+ * Adult     -    2-2.4   - 5.08-6.09
+ * Child     -      2     - 5.08
+ * Infant    -     1.5    - 3.81
+ */
 int AED::analayzeCPRDepth(double d)
 {
-    double minDepth = 5.08; //cm
-    double maxDepth = 6.04;
+    double minDepth = 5.08;
+    double maxDepth = 6.09;
 
     QString age = electrode->getPatient()->getAgeStage();
     qDebug() << "age: " << age;
-    if (age != "Adult") {
-        minDepth = 4.99;
-        maxDepth = 5.04;
+    if (age == "Child") {
+        minDepth = 5.03;
+        maxDepth = 5.13;
+    } else if (age == "Infant") {
+        minDepth = 3.76;
+        maxDepth = 3.86;
     }
 
     if (d < minDepth) {
@@ -207,7 +223,7 @@ void AED::doCompressions(int numberOfCompressions)
 {
     QString feedBack = "";
 
-    qDebug() << "current cpr depth: " << electrode;//->getCompressionDepth();
+    qDebug() << "current cpr depth: " << electrode->getCompressionDepth();
     int d = analayzeCPRDepth(electrode->getCompressionDepth());
 
     int cpr = 0;
@@ -236,6 +252,5 @@ void AED::doCompressions(int numberOfCompressions)
         d = analayzeCPRDepth(electrode->getCompressionDepth());
     }
     qDebug() << "Delivered " << cpr << " compressions";
-
 
 }
