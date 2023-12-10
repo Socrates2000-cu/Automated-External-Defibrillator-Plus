@@ -16,14 +16,12 @@ public:
 
     void attachPatient(Patient*);
     bool hasProperlyConnectedToPatient();
-//    void setCompressionDepth(float d);
 
 public slots:
     void setCompressionDepth(double depth);
 
 private:
     double compressionDepth;  // in cm
-    // no need to specify different types of pads (adult, child)
     Patient* patient;
 
 };

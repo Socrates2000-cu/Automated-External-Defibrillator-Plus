@@ -17,7 +17,6 @@ public:
     QString getEcgWave();
 
 public slots:
-    void setAgeStage(QString newAge);
     void setEcgWave(QString newEcgWave);
 
 private:

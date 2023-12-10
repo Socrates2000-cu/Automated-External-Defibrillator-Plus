@@ -4,6 +4,7 @@
 
 AED::AED() : batteryLevel(24), numOfShocks(0), shockAmount(0) {
     elapsedTime.start(); //start elapsed timer
+    electrode = nullptr;
 }
 
 AED::~AED() {
@@ -122,11 +123,11 @@ void AED::analyzeAndDecideShock()
     QString ecgWave = patient->getEcgWave();
 
     if (ecgWave == "V_TACH" || ecgWave == "V_FIB") {  // shockable
-        if (age == "adult") {
+        if (age == "Adult") {
             if (numOfShocks == 0) shockAmount = 120;
             else if (numOfShocks == 1) shockAmount = 150;
             else shockAmount = 200;
-        } else if (age == "child" || age == "infant") {
+        } else if (age == "Child" || age == "Infant") {
             if (numOfShocks == 0) shockAmount = 50;
             else if (numOfShocks == 1) shockAmount = 70;
             else shockAmount = 85;
@@ -187,7 +188,7 @@ int AED::analayzeCPRDepth(double d)
 
     QString age = electrode->getPatient()->getAgeStage();
     qDebug() << "age: " << age;
-    if (age != "adult") {
+    if (age != "Adult") {
         minDepth = 4.99;
         maxDepth = 5.04;
     }

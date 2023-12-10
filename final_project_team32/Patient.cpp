@@ -5,8 +5,8 @@ Patient::Patient(QString ageStage, QString ecgWave) :
     ageStage(ageStage), ecgWave(ecgWave)
 {
     // verify inputs, otherwise use default beginning states
-    if (ageStage != "adult" && ageStage != "child" && ageStage != "infant") {
-            this->ageStage = "adult";
+    if (ageStage != "Adult" && ageStage != "Child" && ageStage != "Infant") {
+            this->ageStage = "Adult";
         } else {
             this->ageStage = ageStage;
         }
@@ -36,16 +36,6 @@ QString Patient::getAgeStage()
 QString Patient::getEcgWave()
 {
     return ecgWave;
-}
-
-void Patient::setAgeStage(QString newAge)
-{
-    // verify input
-    if (newAge != "adult" && newAge != "child" && newAge != "infant") return;
-
-    mutex.lock();
-    this->ageStage = newAge;
-    mutex.unlock();
 }
 
 void Patient::setEcgWave(QString newEcgWave)

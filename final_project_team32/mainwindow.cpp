@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent):
 
     // initialize AED and Electrode (pad)
     theAEDPlus = new AED();
+    patient = nullptr;
     electrode = new Electrode();
     if(ui->connectAED->isChecked()) theAEDPlus->connectElectrode(electrode);
     electrode->setCompressionDepth(ui->lineEdit->text().toDouble());
@@ -30,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent):
     // connections of Electrode connections (to AED) and attachment (to chest)
     connect(ui->connectAED, SIGNAL(toggled(bool)), this, SLOT(changeElectrodeConnection(bool)));  // change state of AED-Electrode connection
     connect(ui->connectChest, SIGNAL(toggled(bool)), this, SLOT(changePatientAttach(bool)));  // change state of AED-Patient attachment
-    //connect(ui->pushButton_charge, SIGNAL(clicked()), this, SLOT(chargeBattery()));
     //connect(ui->, SIGNAL(valueChanged(double)), electrode, SLOT(setCompressionDepth(double)));
 
     // Power button
@@ -41,17 +41,16 @@ MainWindow::MainWindow(QWidget *parent):
     // progress bar for battery
     connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBattery(int)));
     connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::setBattery);
-
     connect(ui->charge_battery, SIGNAL(clicked()), theAEDPlus, SLOT(chargeBattery()));
 
     // connections of attaching pad (step 3)
-    connect(theAEDPlus, SIGNAL(attach()), this, SLOT(attachPads()));  // signal attach() -> attachPads()
+    connect(theAEDPlus, SIGNAL(attach()), this, SLOT(attachPads()));  // AED signal attach() -> attachPads()
     connect(ui->connectChest, SIGNAL(clicked(bool)), this, SLOT(connectedChest())); //checkbox for connected to chest
 
     // connections of analysis and shock delivery (step 4)
     connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
-    connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> this shockable()
-    connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));  // shock button pressed -> this deliverShock()
+    connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> shockable()
+    connect(ui->deliverShock, SIGNAL(released()), this, SLOT(deliverShock()));  // shock button pressed -> deliverShock()
 
     //delivering CPR (step 5)
     connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));
@@ -69,6 +68,7 @@ MainWindow::~MainWindow()
     delete ui;
     delete electrode;
     delete theAEDPlus;
+    if (patient != nullptr) delete patient;
 }
 bool MainWindow::isPowered(){
     return powered;
@@ -92,6 +92,9 @@ void MainWindow::confirmInitialization()
 
     // enable AED power button
     ui->powerButton->setEnabled(true);
+
+    // each time comboBox changes, update patient's health state
+    connect(ui->health, SIGNAL(currentTextChanged(QString)), patient, SLOT(setEcgWave(QString)));
 }
 
 void MainWindow::pressPowerButton()

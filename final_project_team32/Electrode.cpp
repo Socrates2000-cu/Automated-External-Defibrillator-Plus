@@ -2,7 +2,7 @@
 #include <QDebug>
 
 Electrode::Electrode() : compressionDepth(0) {
-
+    patient = nullptr;
 }
 
 double Electrode::getCompressionDepth()
