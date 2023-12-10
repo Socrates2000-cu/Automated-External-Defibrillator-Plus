@@ -35,6 +35,10 @@ public slots:
     void deliverCPR();
     void chargeBattery();
 
+
+    void updateDisplayTime();
+
+
 signals:
     void powerOffFromAED();
     void updateFromAED(int b);
@@ -46,6 +50,10 @@ signals:
     void waitForGuiChange(int);
     void updateNumOfShocks(int);
 
+    //for display elapsed time and num of shock
+    void updateDisplay(QString a, int numOfShocks);
+
+    void resetCPRdepth();
 
 private:
     bool powered;
@@ -57,6 +65,9 @@ private:
 
     int analayzeCPRDepth(double);
     void doCompressions(int numberOfCompressions);
+
+
+    QElapsedTimer time;
 };
 
 #endif // AED_H

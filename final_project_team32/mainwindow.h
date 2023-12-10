@@ -30,6 +30,8 @@ public slots:
 
     void updateNumOfShocks(int num);
 
+    void resetCPRdepth();
+
 private:
 
     void powerOn();  // start the cycle after power on
@@ -63,6 +65,13 @@ private slots:
     void attachPads();  //step3
     void connectedChest(); //step3
     void deliverCPR();
+
+    //try
+    //void updateDisplayTime(QString); //it works
+
+    //try another
+    void updateDisplay(QString,int);
+
 
 
 signals:

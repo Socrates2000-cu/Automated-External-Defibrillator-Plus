@@ -1,14 +1,32 @@
 #include "AED.h"
 #include <QDebug>
 #include <QThread>
+#include <QTime>
+#include <QTimer>
+#include <QElapsedTimer>
 
 AED::AED(int batteryLevel) : powered(false), batteryLevel(batteryLevel),
     numOfShocks(0), shockAmount(0) {
     elapsedTime.start(); //start elapsed timer
     electrode = nullptr;
+
 }
 
 AED::~AED() {
+}
+
+
+void AED::updateDisplayTime(){
+//   qDebug() << time.elapsed();
+   int secs = time.elapsed() / 1000;
+           int mins = (secs / 60) % 60;
+           int hours = (secs / 3600);
+           secs = secs % 60;
+         QString a = QString("%1:%2:%3").arg(hours, 2, 10, QLatin1Char('0'))
+                               .arg(mins, 2, 10, QLatin1Char('0'))
+                               .arg(secs, 2, 10, QLatin1Char('0')) ;
+
+         emit updateDisplay(a,numOfShocks);
 }
 
 bool AED::isPowered() {
@@ -31,6 +49,14 @@ void AED::powerOn(){
             qInfo("Calling emergency services...");
             //timer
             //next signal or function initiating electrodePad
+
+            //this timer is for elapsed time, so that it will show 'real-time'
+            time.start();
+            QTimer *timer = new QTimer(this);
+            connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplayTime()));
+            timer->start(1000);
+
+
             emit attach();
         }
         else{
@@ -54,7 +80,6 @@ void AED::powerOn(){
 void AED::powerOff(){
     //whatever we decide should happen
     powered = false;
-    emit powerOffFromAED();
 }
 
 
@@ -252,5 +277,8 @@ void AED::doCompressions(int numberOfCompressions)
         d = analayzeCPRDepth(electrode->getCompressionDepth());
     }
     qDebug() << "Delivered " << cpr << " compressions";
+
+    //reset the CPR to be zero
+    emit resetCPRdepth();
 
 }

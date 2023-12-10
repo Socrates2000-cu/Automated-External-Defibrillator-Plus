@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent):
     // Power button
     //connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
     connect(ui->powerButton, &QPushButton::clicked, this, &MainWindow::pressPowerButton);
-    connect(theAEDPlus, &AED::powerOffFromAED, this, &MainWindow::powerOff);
+    //connect(theAEDPlus, &AED::powerOffFromAED, this, &MainWindow::powerOff);
 
     // progress bar for battery
     connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBattery(int)));
@@ -52,6 +52,10 @@ MainWindow::MainWindow(QWidget *parent):
     connect(theAEDPlus, SIGNAL(nonShockable()), this, SLOT(nonShockable()));  // AED signal nonShockable() -> nonShockable()
     connect(ui->deliverShock, SIGNAL(clicked()), this, SLOT(deliverShock()));  // shock button pressed -> deliverShock()
     connect(theAEDPlus, SIGNAL(updateNumOfShocks(int)), this, SLOT(updateNumOfShocks(int)));
+
+    //for display of num of shocks , depth , elapsed time
+     connect(theAEDPlus, SIGNAL(updateDisplay(QString,int)), this, SLOT(updateDisplay(QString,int)));
+     connect(theAEDPlus, SIGNAL(resetCPRdepth()), this, SLOT(resetCPRdepth()));
 
     //delivering CPR (step 5)
     connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));  // TODO delete after debugging
@@ -117,9 +121,9 @@ void MainWindow::changePatientAttach(bool attached)
 void MainWindow::powerOn()
 {
     qDebug() << "Power on!";
-    theAEDPlus->powerOn();
     ui->increase->setEnabled(false);
     ui->decrease->setEnabled(false);
+    theAEDPlus->powerOn();
 }
 
 //CURRENTLY NOT IN USE
@@ -129,7 +133,7 @@ void MainWindow::powerOff()
     //power off sequence of turning off LEDs or anything else
     qDebug() << "Power off!";
     theAEDPlus->powerOff();
-
+    QApplication::exit();
 }
 
 void MainWindow::setBattery(int v){
@@ -169,6 +173,11 @@ void MainWindow::on_decrease_clicked()
 
 void MainWindow::analyzeHeartRhythm()
 {
+    if (theAEDPlus->getBattery() <= 5) {
+        qInfo() << "Battery low. Cannot analyze.";
+        return;
+    }
+
     // turn indicator light to flash
     indicatorLightFlash(ui->indicator4);
     qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
@@ -193,6 +202,10 @@ void MainWindow::nonShockable() {
 
 void MainWindow::deliverShock()
 {
+    if (theAEDPlus->getBattery() <= 20) {
+        qInfo() << "Battery low. Cannot deliver shock.";
+        return;
+    }
     qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
     displayPrompt("STAND CLEAR");
     nonBlockingSleep(1);
@@ -218,10 +231,10 @@ void MainWindow::updateNumOfShocks(int num)
     QString text = "Shocks: " + QString::number(num);
 
     //set compresssion depth info
-    QTextCursor cursor = ui->textEdit_shocks->textCursor();
-    cursor.movePosition(QTextCursor::Start);
-    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-    cursor.insertText(text);
+//    QTextCursor cursor = ui->textEdit_shocks->textCursor();
+//    cursor.movePosition(QTextCursor::Start);
+//    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+//    cursor.insertText(text);
 }
 
 void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
@@ -317,10 +330,10 @@ void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
     QString depth = "Depth: " + QString::number(cprDepth) + " cm";
 
     //set compresssion depth info
-    QTextCursor cursor = ui->textEdit_depth->textCursor();
-    cursor.movePosition(QTextCursor::Start);
-    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-    cursor.insertText(depth);
+//    QTextCursor cursor = ui->textEdit_depth->textCursor();
+//    cursor.movePosition(QTextCursor::Start);
+//    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+//    cursor.insertText(depth);
 
     qDebug() << " finished updating display for cpr feedback";
 }
@@ -366,4 +379,20 @@ void MainWindow::nonBlockingSleep(int seconds)
     QTime timeout = QTime::currentTime().addSecs(seconds);
     while (QTime::currentTime() < timeout)
         QCoreApplication::processEvents(QEventLoop::AllEvents);
+}
+
+
+void MainWindow::updateDisplay(QString a, int num)
+{
+
+      ui->elapsedtime->setText("E.T.: "+a.mid(3,5));// only need substring 00:00:00
+      QString qstr = QString::fromStdString(std::to_string(num));
+      ui->shocks->setText("Shocks: "+qstr);
+      QString qstr2 = QString::fromStdString(std::to_string(ui->depth->value()));
+      ui->depthdisplay->setText("Dep: "+qstr2.mid(0,3)+"cm");
+
+}
+
+void MainWindow::resetCPRdepth(){
+    ui->depth->setValue(0.0);
 }
