@@ -8,7 +8,8 @@
 
 
 MainWindow::MainWindow(QWidget *parent):
-    QMainWindow(parent), ui(new Ui::MainWindow)
+    QMainWindow(parent), ui(new Ui::MainWindow),
+    powered(false)
 {
     ui->setupUi(this);
 //    makeCPRDepthFieldReadOnly(true);
@@ -37,8 +38,17 @@ MainWindow::MainWindow(QWidget *parent):
     connect(ui->powerButton, &QPushButton::clicked, this, &MainWindow::pressPowerButton);
     //connect(theAEDPlus, &AED::powerOffFromAED, this, &MainWindow::powerOff);
 
+    //Self-test result
+    connect(theAEDPlus, &AED::selfTestResult, this, &MainWindow::selfTestResult);
+
+    //Indicator Signals
+    connect(theAEDPlus, &AED::indicatorSig1On, this, [this](){this->indicatorLightFlash(ui->indicator1, true);});
+    connect(theAEDPlus, &AED::indicatorSig1Off, this, [this](){this->indicatorLightFlash(ui->indicator1, false);});
+    connect(theAEDPlus, &AED::indicatorSig2On, this, [this](){this->indicatorLightFlash(ui->indicator2, true);});
+    connect(theAEDPlus, &AED::indicatorSig2Off, this, [this](){this->indicatorLightFlash(ui->indicator2, false);});
+
     // progress bar for battery
-    connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBattery(int)));
+    connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBatteryInAED(int)));
     connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::setBattery);
     connect(ui->charge_battery, SIGNAL(clicked()), theAEDPlus, SLOT(chargeBattery()));
 
@@ -63,6 +73,10 @@ MainWindow::MainWindow(QWidget *parent):
     connect(theAEDPlus, SIGNAL(CPRFeedback(QString, float)), this, SLOT(CPRFeedback(QString, float))); // AED signal CPRFeedback(QString, float) -> this CPRFeedback(QString, float)
     connect(ui->depth, SIGNAL(valueChanged(double)), electrode, SLOT(setCompressionDepth(double)));
     connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
+
+    //Display from AED
+    connect(theAEDPlus, &AED::displayPrompt, this, &MainWindow::displayPrompt);
+    //connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
 
 }
 
@@ -97,13 +111,25 @@ void MainWindow::confirmInitialization()
     connect(ui->health, SIGNAL(currentTextChanged(QString)), patient, SLOT(setEcgWave(QString)));
 }
 
+bool MainWindow::isPowered(){
+    return powered;
+}
+
 void MainWindow::pressPowerButton()
 {
-    if (!theAEDPlus->isPowered()){
+    if (!isPowered()){
         powerOn();
     } else{
         powerOff();
     }
+}
+
+void MainWindow::selfTestResult(bool b){
+
+    if(b==true){
+        ui->selfTest->setStyleSheet("image: url(:/self_test_ok.jpg);" "background-color: grey;" "border: none;");
+    }
+
 }
 
 void MainWindow::changeElectrodeConnection(bool connected)
@@ -120,7 +146,15 @@ void MainWindow::changePatientAttach(bool attached)
 
 void MainWindow::powerOn()
 {
-    qDebug() << "Power on!";
+    displayPrompt("POWERING UP AED...");
+    powered=true;
+    QTimer::singleShot(3000, [this](){
+        if(theAEDPlus->getBattery() == 0){
+            displayPrompt("BATTERY LOW. RECHARGE OR CHANGE BATTERIES NOW TO USE.");
+            powerOff();
+            return;
+        }
+    });
     ui->increase->setEnabled(false);
     ui->decrease->setEnabled(false);
     theAEDPlus->powerOn();
@@ -130,9 +164,10 @@ void MainWindow::powerOn()
 //can be called from AED or MW if we decide
 void MainWindow::powerOff()
 {
+    powered=false;
     //power off sequence of turning off LEDs or anything else
-    qDebug() << "Power off!";
-    theAEDPlus->powerOff();
+    displayPrompt("SHUTTING DOWN AED...");
+    //theAEDPlus->powerOff();
     QApplication::exit();
 }
 
@@ -143,10 +178,16 @@ void MainWindow::setBattery(int v){
 
 }
 
-void MainWindow::updateBattery(int v){
+void MainWindow::updateBatteryInAED(int v){
 
-    v = ui->battery->value();
     theAEDPlus->setBattery(v);
+    if(theAEDPlus->getBattery() == 0){
+        powerOff();
+        return;
+    }
+    if(theAEDPlus->getBattery() <= 20){
+        displayPrompt("BATTERY RUNNING LOW. RECHARGE OR CHANGE BATTERY SOON.");
+    }
     qInfo("battery is: %d", v);
 
 }
@@ -173,7 +214,7 @@ void MainWindow::on_decrease_clicked()
 
 void MainWindow::analyzeHeartRhythm()
 {
-    if (theAEDPlus->getBattery() <= 5) {
+    if (theAEDPlus->getBattery() < 5) {
         qInfo() << "Battery low. Cannot analyze.";
         return;
     }
@@ -380,7 +421,6 @@ void MainWindow::nonBlockingSleep(int seconds)
     while (QTime::currentTime() < timeout)
         QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
-
 
 void MainWindow::updateDisplay(QString a, int num)
 {

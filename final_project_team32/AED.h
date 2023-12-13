@@ -14,21 +14,19 @@ public:
     AED(int batteryLevel);
     ~AED();
 
-    bool isPowered();
     int getBattery();
+    void setBattery(int b);
     Electrode* getElectrode();
-
-    // features in the cycle
-    void analyzeAndDecideShock();
-    void powerOn();
-    void powerOff(); //may or may not use
-
-    bool selfTest();
     void connectElectrode(Electrode*);
+
+    void powerOn();
+    void powerOff();
     bool hasBattery();
     void consumeBattery(int);
-    void setBattery(int b);
     void updateBattery(int b);
+    bool selfTest();	
+    // features in the cycle
+    void analyzeAndDecideShock();
 
 public slots:
     void deliverShock();
@@ -40,9 +38,14 @@ public slots:
 
 
 signals:
+    void selfTestResult(bool);
     void powerOffFromAED();
     void updateFromAED(int b);
     void checkElectrode();
+     void indicatorSig1On();
+    void indicatorSig1Off();
+    void indicatorSig2On();
+    void indicatorSig2Off();
     void attach();
     void shockable();
     void nonShockable();
@@ -52,11 +55,11 @@ signals:
 
     //for display elapsed time and num of shock
     void updateDisplay(QString a, int numOfShocks);
-
+    void displayPrompt(QString input);
     void resetCPRdepth();
 
 private:
-    bool powered;
+    
     int batteryLevel;
     int numOfShocks;  // the number of shocks delivered
     int shockAmount; //the amount of shock in Joul to be delivered (prev?)

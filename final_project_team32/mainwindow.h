@@ -21,28 +21,31 @@ public:
     ~MainWindow();
 
     void pressPowerButton();
+    bool isPowered();
 
 public slots:
+    void selfTestResult(bool);
     void shockable();
     void nonShockable();
     void CPRFeedback(QString feedBack, float cprDepth);
     void waitForGuiChange(int milliseconds);
-
+	
     void updateNumOfShocks(int num);
 
     void resetCPRdepth();
-
+    void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
+    void powerOff();
+     void displayPrompt(QString input);
+    
 private:
 
     void powerOn();  // start the cycle after power on
-    void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
-    void displayPrompt(QString input);
     void displayEcgPic();
     void clearDisplay();
     void nonBlockingSleep(int seconds);
 
     Ui::MainWindow *ui;
-
+    bool powered;
     AED* theAEDPlus;
     Electrode* electrode;
     Patient* patient;
@@ -53,12 +56,12 @@ private slots:
     void changeElectrodeConnection(bool);
     void changePatientAttach(bool);
     void confirmInitialization();
-    void powerOff();
+    
     void analyzeHeartRhythm();  // step 4
     void deliverShock();  // step 4
 
     void setBattery(int v);
-    void updateBattery(int v);
+    void updateBatteryInAED(int v);
     void on_increase_clicked();
     void on_decrease_clicked();
 

@@ -5,7 +5,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
-AED::AED(int batteryLevel) : powered(false), batteryLevel(batteryLevel),
+AED::AED(int batteryLevel) : batteryLevel(batteryLevel),
     numOfShocks(0), shockAmount(0) {
     elapsedTime.start(); //start elapsed timer
     electrode = nullptr;
@@ -29,75 +29,54 @@ void AED::updateDisplayTime(){
          emit updateDisplay(a,numOfShocks);
 }
 
-bool AED::isPowered() {
-    return powered;
-}
-
 void AED::powerOn(){
 
-//    if(!isPowered()){
-//        //turn on
-//        powered = true;
-//        //visual prompt
-        qInfo("Starting AED...");
-        //audio prompt
-        //initiate self-test
-        if(selfTest()){
-            powered = true;
-            qInfo("STAY CALM.");
-            qInfo("CHECK RESPONSIVENESS.");
-            qInfo("Calling emergency services...");
-            //timer
-            //next signal or function initiating electrodePad
+        emit displayPrompt(QString("STARTING AED..."));
+        emit indicatorSig1On();
+        emit displayPrompt(QString("RUNNING SELF TEST"));
 
-            //this timer is for elapsed time, so that it will show 'real-time'
-            time.start();
-            QTimer *timer = new QTimer(this);
-            connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplayTime()));
-            timer->start(1000);
-
-
-            emit attach();
-        }
-        else{
-            //power off AED from AEDplus
-            //power off MW
-           QTimer::singleShot(5000, [this](){
-             powerOff();
-           });
-        }
-
+        QTimer::singleShot(3000, [this](){
+            if(selfTest()){
+                emit selfTestResult(true);
+                emit indicatorSig1Off();
+                emit displayPrompt(QString("STAY CALM"));
+                emit displayPrompt(QString("CHECK RESPONSIVENESS."));
+                emit indicatorSig2On();
+                QTimer::singleShot(5000, [this](){
+                    emit displayPrompt(QString("CALLING EMERGENCY SERVICES!"));
+                    emit indicatorSig2On();
+                    emit attach();
+                });
+            }
+            else{
+               QTimer::singleShot(3000, [this](){
+                 powerOff();
+               });
+            }
+       });
 }
-//   else{
-//        //prompts for shutting off
-//        qInfo("Shutting down...");
-//        //turn LEDsoff
-//        //indefinite sleep?
-//        powered = false;
-//    }
-//}
+
 
 void AED::powerOff(){
     //whatever we decide should happen
-    powered = false;
+    emit powerOffFromAED();
 }
 
 
 bool AED::selfTest(){
-    qInfo("Self test init");
 
     if((getElectrode()!=nullptr) && hasBattery()){//add battery condition
         qInfo("UNIT OK.");
         return true;
     }
 
-    qInfo("UNIT FAILED.");
+    emit displayPrompt(QString("UNIT FAILED."));
     if(!hasBattery()){
-        qInfo("CHANGE BATTERIES.");
+         emit displayPrompt(QString("CHANGE BATTERIES."));
         return false;
     }
     if(getElectrode()==nullptr){
-        qInfo("Connect electrode and restart AED.");
+         emit displayPrompt(QString("CONNECT ELECTRODE AND RESTART AED."));
     }
     return false;
 }
@@ -129,12 +108,14 @@ void AED::updateBattery(int b){
 
 void AED::chargeBattery() {
     updateBattery(100);
+    //emit updateFromAED(100);
 }
 
 void AED::consumeBattery(int b){
 
     int newBattery = getBattery()-b;
     updateBattery(newBattery);
+    //emit updateFromAED(newBattery);
 
 }
 
