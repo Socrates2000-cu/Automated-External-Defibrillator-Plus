@@ -35,8 +35,16 @@ void AED::powerOn(){
         emit indicatorSig1On();
         emit displayPrompt(QString("RUNNING SELF TEST"));
 
+    //this timer is for elapsed time, so that it will show 'real-time'
+                time.start();
+                QTimer *timer = new QTimer(this);
+                connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplayTime()));
+                timer->start(1000);
+
         QTimer::singleShot(3000, [this](){
             if(selfTest()){
+
+
                 emit selfTestResult(true);
                 emit indicatorSig1Off();
                 emit displayPrompt(QString("STAY CALM"));
@@ -44,7 +52,7 @@ void AED::powerOn(){
                 emit indicatorSig2On();
                 QTimer::singleShot(5000, [this](){
                     emit displayPrompt(QString("CALLING EMERGENCY SERVICES!"));
-                    emit indicatorSig2On();
+                    emit indicatorSig2Off();
                     emit attach();
                 });
             }
