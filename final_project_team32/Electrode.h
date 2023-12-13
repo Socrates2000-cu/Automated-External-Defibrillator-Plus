@@ -10,19 +10,23 @@ class Electrode: public QObject {
 
 public:
     Electrode();
+    ~Electrode();
 
-    double getCompressionDepth();
     Patient* getPatient();
+    double getCompressionDepth();
 
     void attachPatient(Patient*);
-    bool hasProperlyConnectedToPatient();
 
 public slots:
     void setCompressionDepth(double depth);
 
 private:
-    double compressionDepth;  // in cm
+    std::unique_ptr<QThread> thread;
+    QMutex mutex;
+
     Patient* patient;
+    double compressionDepth;  // in cm
+
 
 };
 

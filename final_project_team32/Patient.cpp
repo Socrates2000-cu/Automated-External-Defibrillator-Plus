@@ -4,7 +4,7 @@
 Patient::Patient(QString ageStage, QString ecgWave) :
     ageStage(ageStage), ecgWave(ecgWave)
 {
-    // verify inputs, otherwise use default beginning states
+    // verify inputs, otherwise use default states
     if (ageStage != "Adult" && ageStage != "Child" && ageStage != "Infant") {
             this->ageStage = "Adult";
         } else {

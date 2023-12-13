@@ -8,23 +8,17 @@
 
 
 MainWindow::MainWindow(QWidget *parent):
-    QMainWindow(parent), ui(new Ui::MainWindow),
-    powered(false)
+    QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-//    makeCPRDepthFieldReadOnly(true);
 
     // initialize AED and Electrode (pad)
     int initBatteryLevel = ui->battery->value();
     theAEDPlus = new AED(initBatteryLevel);
     patient = nullptr;
     electrode = new Electrode();
-    if(ui->connectAED->isChecked()) theAEDPlus->connectElectrode(electrode);
+    if (ui->connectAED->isChecked()) theAEDPlus->connectElectrode(electrode);
     electrode->setCompressionDepth(ui->depth->text().toDouble());
-
-    // disable power button and shock button at the beginning
-    ui->powerButton->setEnabled(false);
-    ui->deliverShock->setEnabled(false);
 
     // confirm the patient's age before patient initialization
     connect(ui->confirm_patient, SIGNAL(pressed()), this, SLOT(confirmInitialization()));
@@ -34,50 +28,33 @@ MainWindow::MainWindow(QWidget *parent):
     connect(ui->connectChest, SIGNAL(toggled(bool)), this, SLOT(changePatientAttach(bool)));  // change state of AED-Patient attachment
 
     // Power button
-    //connect(ui->powerButton, &QPushButton::clicked, theAEDPlus, &AED::power);
     connect(ui->powerButton, &QPushButton::clicked, this, &MainWindow::pressPowerButton);
-    //connect(theAEDPlus, &AED::powerOffFromAED, this, &MainWindow::powerOff);
 
-    //Self-test result
-    connect(theAEDPlus, &AED::selfTestResult, this, &MainWindow::selfTestResult);
-
-    //Indicator Signals
-    connect(theAEDPlus, &AED::indicatorSig1On, this, [this](){this->indicatorLightFlash(ui->indicator1, true);});
-    connect(theAEDPlus, &AED::indicatorSig1Off, this, [this](){this->indicatorLightFlash(ui->indicator1, false);});
-    connect(theAEDPlus, &AED::indicatorSig2On, this, [this](){this->indicatorLightFlash(ui->indicator2, true);});
-    connect(theAEDPlus, &AED::indicatorSig2Off, this, [this](){this->indicatorLightFlash(ui->indicator2, false);});
+    // Safety features and self test
+    connect(theAEDPlus, &AED::passSelfTest, this, &MainWindow::passSelfTest);
+    connect(theAEDPlus, &AED::batteryLow, this, &MainWindow::batteryLow);
+    connect(theAEDPlus, &AED::lossConnection, this, &MainWindow::lossConnection);
+    connect(theAEDPlus, &AED::lossAttach, this, &MainWindow::handleLossAttach);
 
     // progress bar for battery
     connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBatteryInAED(int)));
-    connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::setBattery);
+    connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::updateBattery);
     connect(ui->charge_battery, SIGNAL(clicked()), theAEDPlus, SLOT(chargeBattery()));
 
     // connections of attaching pad (step 3)
-    connect(theAEDPlus, SIGNAL(attach()), this, SLOT(attachPads()));  // AED signal attach() -> attachPads()
-    connect(ui->connectChest, SIGNAL(clicked(bool)), this, SLOT(connectedChest())); //checkbox for connected to chest
+    connect(this, SIGNAL(attach()), this, SLOT(attachPads()));  // signal attach() -> attachPads()
 
     // connections of analysis and shock delivery (step 4)
     connect(this, SIGNAL(analyze()), this, SLOT(analyzeHeartRhythm()));  // signal analyze() -> analyzeHeartRhythm()
     connect(theAEDPlus, SIGNAL(shockable()), this, SLOT(shockable()));  // AED signal shockable() -> shockable()
     connect(theAEDPlus, SIGNAL(nonShockable()), this, SLOT(nonShockable()));  // AED signal nonShockable() -> nonShockable()
     connect(ui->deliverShock, SIGNAL(clicked()), this, SLOT(deliverShock()));  // shock button pressed -> deliverShock()
-    connect(theAEDPlus, SIGNAL(updateNumOfShocks(int)), this, SLOT(updateNumOfShocks(int)));
 
-    //for display of num of shocks , depth , elapsed time
-     connect(theAEDPlus, SIGNAL(updateDisplay(QString,int)), this, SLOT(updateDisplay(QString,int)));
-     connect(theAEDPlus, SIGNAL(resetCPRdepth()), this, SLOT(resetCPRdepth()));
-
-    //delivering CPR (step 5)
-    connect(ui->testCPR, SIGNAL(released()), this, SLOT(deliverCPR()));  // TODO delete after debugging
+    // delivering CPR (step 5)
     connect(this, SIGNAL(cpr()), this, SLOT(deliverCPR()));  // cpr entry function
     connect(theAEDPlus, SIGNAL(CPRFeedback(QString, float)), this, SLOT(CPRFeedback(QString, float))); // AED signal CPRFeedback(QString, float) -> this CPRFeedback(QString, float)
     connect(ui->depth, SIGNAL(valueChanged(double)), electrode, SLOT(setCompressionDepth(double)));
-    connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
-
-    //Display from AED
-    connect(theAEDPlus, &AED::displayPrompt, this, &MainWindow::displayPrompt);
-    //connect(theAEDPlus, SIGNAL(waitForGuiChange(int)), this, SLOT(waitForGuiChange(int)));
-
+    connect(theAEDPlus, SIGNAL(finishCPR()), this, SLOT(finishCPR()));
 }
 
 MainWindow::~MainWindow()
@@ -95,6 +72,10 @@ void MainWindow::confirmInitialization()
     QString age = ui->age->currentText();
 
     // initialize Patient
+    if (patient != nullptr) { // free previous patient
+        delete patient;
+        electrode->attachPatient(nullptr);
+    }
     patient = new Patient(age, healthState);
 
     // read UI checkboxes to decide if electrode is attached to patient
@@ -111,25 +92,145 @@ void MainWindow::confirmInitialization()
     connect(ui->health, SIGNAL(currentTextChanged(QString)), patient, SLOT(setEcgWave(QString)));
 }
 
-bool MainWindow::isPowered(){
-    return powered;
-}
-
 void MainWindow::pressPowerButton()
 {
-    if (!isPowered()){
-        powerOn();
-    } else{
-        powerOff();
-    }
+    if (theAEDPlus->isPowered()) powerOff();
+    else powerOn();
 }
 
-void MainWindow::selfTestResult(bool b){
+void MainWindow::powerOn()
+{
+    displayPrompt("POWERING UP AED...");
+    QTimer::singleShot(1000, [this](){
+        displayPrompt(QString("RUNNING SELF TEST"));
+        QMetaObject::invokeMethod(theAEDPlus, "selfTest");
+    });
+}
 
-    if(b==true){
-        ui->selfTest->setStyleSheet("image: url(:/self_test_ok.jpg);" "background-color: grey;" "border: none;");
-    }
+void MainWindow::powerOff()
+{
+    displayPrompt("SHUTTING DOWN AED...");
 
+    indicatorLightFlash(ui->indicator1, false);
+    indicatorLightFlash(ui->indicator2, false);
+    indicatorLightFlash(ui->indicator3, false);
+    indicatorLightFlash(ui->indicator4, false);
+    indicatorLightFlash(ui->indicator5, false);
+    indicatorLightFlash(ui->deliverShock, false);
+    ui->selfTest->setStyleSheet("image: url(:/self_test_not_ok.jpg);" "background-color: grey;" "border: none;");
+
+    clearDisplay();
+    resetAdmin();
+
+    timer.stop();
+    theAEDPlus->powerOff();  // call directly to force power off
+}
+
+void MainWindow::resetAdmin()
+{
+    // disable power button and shock button
+    ui->powerButton->setDisabled(true);
+    ui->deliverShock->setDisabled(true);
+
+    // enable patient age initialization
+    ui->age->setEnabled(true);
+    ui->confirm_patient->setEnabled(true);
+
+    // uncheck electrode and pads
+    ui->connectAED->setChecked(false);
+    ui->connectChest->setChecked(false);
+    ui->depth->setValue(0.0);
+    ui->charge_battery->setEnabled(true);
+
+    ui->shocks->setText("Shock:  0");
+    ui->elapsedtime->setText("E.T.:  00:00");
+    ui->depthdisplay->setText("Dep: 0cm");
+}
+
+void MainWindow::passSelfTest(){
+    ui->increase->setDisabled(true);
+    ui->decrease->setDisabled(true);
+    ui->charge_battery->setDisabled(true);  // cannot change battery when powered on
+    displayPrompt("UNIT OK");
+    ui->selfTest->setStyleSheet("image: url(:/self_test_ok.jpg);" "background-color: grey;" "border: none;");
+
+    // start timer
+    connect(&timer, SIGNAL(timeout()), this, SLOT(updateDisplay()));
+    timer.start(1000);
+
+    // step 1
+    QTimer::singleShot(2000, [this](){
+        checkResponse();
+    });
+}
+
+void MainWindow::updateDisplay()
+{
+    int secs = theAEDPlus->getElapsedSec() / 1000;
+    int mins = (secs / 60) % 60;
+    int hours = (secs / 3600);
+    secs = secs % 60;
+    QString et = QString("%1:%2:%3").arg(hours, 2, 10, QLatin1Char('0'))
+            .arg(mins, 2, 10, QLatin1Char('0'))
+            .arg(secs, 2, 10, QLatin1Char('0')) ;
+
+    int numShocks  = theAEDPlus->getNumShocks();
+
+    ui->elapsedtime->setText("E.T.: " + et.mid(3,5));// only need substring 00:00:00
+    QString numShockText = QString::fromStdString(std::to_string(numShocks));
+    ui->shocks->setText("Shocks: " + numShockText);
+    QString depthText = QString::fromStdString(std::to_string(ui->depth->value()));
+    ui->depthdisplay->setText("Dep: " + depthText.mid(0,3) + "cm");
+}
+
+void MainWindow::batteryLow()
+{
+    displayPrompt(QString("UNIT FAILED."));
+    displayPrompt(QString("CHANGE BATTERIES."));
+    qInfo("BATTERY LOW. RECHARGE OR CHANGE BATTERIES NOW TO USE.");
+    QTimer::singleShot(2000, [this](){
+        powerOff();
+    });
+}
+
+void MainWindow::lossConnection()
+{
+    displayPrompt(QString("UNIT FAILED."));
+    displayPrompt(QString("CONNECT ELECTRODE AND RESTART AED."));
+    QTimer::singleShot(2000, [this](){
+        powerOff();
+    });
+}
+
+void MainWindow::handleLossAttach() {
+    qDebug() << "Warning! The electrode pad is not attached to the patient's chest correctly.";
+    if (theAEDPlus->getState() >= 3) emit attach();
+}
+
+void MainWindow::checkResponse() {
+    if (!theAEDPlus->isPowered()) return;
+
+    indicatorLightFlash(ui->indicator1, true);
+    displayPrompt("STAY CALM");
+    displayPrompt("CHECK RESPONSIVENESS.");
+    theAEDPlus->setState(1);
+
+    QTimer::singleShot(2000, [this](){
+        callEmergency();
+    });
+}
+
+void MainWindow::callEmergency() {
+    if (!theAEDPlus->isPowered()) return;
+
+    indicatorLightFlash(ui->indicator1, false);
+    indicatorLightFlash(ui->indicator2, true);
+    displayPrompt("CALLING EMERGENCY SERVICES!");
+    theAEDPlus->setState(2);
+
+    QTimer::singleShot(3000, [this](){
+        emit attach();  // trigger attach (not function call stack)
+    });
 }
 
 void MainWindow::changeElectrodeConnection(bool connected)
@@ -140,42 +241,17 @@ void MainWindow::changeElectrodeConnection(bool connected)
 
 void MainWindow::changePatientAttach(bool attached)
 {
-    if (attached) electrode->attachPatient(patient);
-    else electrode->attachPatient(nullptr);
+    if (attached) {
+        electrode->attachPatient(patient);
+        if (theAEDPlus->getState() == 3) emit analyze();
+    } else {
+        electrode->attachPatient(nullptr);
+    }
 }
 
-void MainWindow::powerOn()
-{
-    displayPrompt("POWERING UP AED...");
-    powered=true;
-    QTimer::singleShot(3000, [this](){
-        if(theAEDPlus->getBattery() == 0){
-            displayPrompt("BATTERY LOW. RECHARGE OR CHANGE BATTERIES NOW TO USE.");
-            powerOff();
-            return;
-        }
-    });
-    ui->increase->setEnabled(false);
-    ui->decrease->setEnabled(false);
-    theAEDPlus->powerOn();
-}
-
-//CURRENTLY NOT IN USE
-//can be called from AED or MW if we decide
-void MainWindow::powerOff()
-{
-    powered=false;
-    //power off sequence of turning off LEDs or anything else
-    displayPrompt("SHUTTING DOWN AED...");
-    //theAEDPlus->powerOff();
-    QApplication::exit();
-}
-
-void MainWindow::setBattery(int v){
-
+void MainWindow::updateBattery(int v){
     ui->battery->setValue(v);
-    qInfo("battery from AED is: %d", v);
-
+    //qInfo("battery from AED is: %d", v);
 }
 
 void MainWindow::updateBatteryInAED(int v){
@@ -185,50 +261,71 @@ void MainWindow::updateBatteryInAED(int v){
         powerOff();
         return;
     }
-    if(theAEDPlus->getBattery() <= 20){
+    if(theAEDPlus->getBattery() < 5){
         displayPrompt("BATTERY RUNNING LOW. RECHARGE OR CHANGE BATTERY SOON.");
     }
-    qInfo("battery is: %d", v);
+    //qInfo("battery is: %d", v);
 
 }
 
 void MainWindow::on_increase_clicked()
 {
     int value = ui->battery->value();
-    qInfo("value: %d", value);
+    //qInfo("value: %d", value);
     value+=1;
     ui->battery->setValue(value);
-    qInfo("Increased to: %d", value);
+    //qInfo("Increased to: %d", value);
 }
 
 void MainWindow::on_decrease_clicked()
 {
 
     int value = ui->battery->value();
-    qInfo("value: %d", value);
+    //qInfo("value: %d", value);
     value-=1;
     ui->battery->setValue(value);
-    qInfo("Decreased to: %d", value);
+    //qInfo("Decreased to: %d", value);
 
+}
+
+// attaching pad to chest
+void MainWindow::attachPads()
+{
+    // safety - check electrode connection
+    if (!theAEDPlus->isPowered() || !theAEDPlus->connectCheck()) return;
+
+    indicatorLightFlash(ui->indicator2, false);
+    indicatorLightFlash(ui->indicator3);
+    displayPrompt("Attach defib pads to patient’s bare chest");
+    theAEDPlus->setState(3);
+
+    QTimer::singleShot(2000, [this](){
+        // if already attached, trigger analyze
+        if (theAEDPlus->getElectrode() != nullptr && theAEDPlus->getElectrode()->getPatient() != nullptr) {
+            emit analyze();
+        }
+    });
 }
 
 void MainWindow::analyzeHeartRhythm()
 {
-    if (theAEDPlus->getBattery() < 5) {
-        qInfo() << "Battery low. Cannot analyze.";
-        return;
-    }
+    // safety - check 1 battery, 2 electrode connection, 3 pads attached
+    if (!(theAEDPlus->isPowered()
+          && theAEDPlus->batteryCheck(5)
+          && theAEDPlus->connectCheck()
+          && theAEDPlus->attachCheck())) return;
 
-    // turn indicator light to flash
+    indicatorLightFlash(ui->indicator3, false);
     indicatorLightFlash(ui->indicator4);
-    qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
-    nonBlockingSleep(3);
+    displayPrompt("Don't touch patient. Analyzing.");
 
-    displayEcgPic();  // update heart rhythm picture
-    indicatorLightFlash(ui->indicator4, false);  // turn indicator light off
+    QTimer::singleShot(3000, [this](){
+        displayEcgPic();  // update heart rhythm picture
+        indicatorLightFlash(ui->indicator4, false);  // turn indicator light off
 
-    // call AED to analyze heart rhythm
-    theAEDPlus->analyzeAndDecideShock();
+        // call AED to analyze heart rhythm
+        QMetaObject::invokeMethod(theAEDPlus, "analyzeAndDecideShock");
+    });
 }
 
 // AED decides shockable signal -> this SLOT shockable
@@ -238,16 +335,17 @@ void MainWindow::shockable() {
 }
 
 void MainWindow::nonShockable() {
-    cpr();
+    emit cpr();
 }
 
 void MainWindow::deliverShock()
 {
-    if (theAEDPlus->getBattery() <= 20) {
-        qInfo() << "Battery low. Cannot deliver shock.";
-        return;
-    }
-    qInfo() << "<Voice Prompt> Don't touch patient. Analyzing.";
+    // safety - check 1 battery, 2 electrode connection, 3 pads attached
+    if (!(theAEDPlus->isPowered()
+          && theAEDPlus->batteryCheck(20)
+          && theAEDPlus->connectCheck()
+          && theAEDPlus->attachCheck())) return;
+
     displayPrompt("STAND CLEAR");
     nonBlockingSleep(1);
     qInfo() << "<Voice Prompt> Shock will be delivered in three, ";
@@ -256,7 +354,7 @@ void MainWindow::deliverShock()
     nonBlockingSleep(1);
     qInfo() << "one ... ";
 
-    theAEDPlus->deliverShock();
+    QMetaObject::invokeMethod(theAEDPlus, "deliverShock");
     nonBlockingSleep(1);
     qInfo() << "<Voice Prompt> Shock tone beeps. Shock delivered.";
     nonBlockingSleep(1);
@@ -264,18 +362,7 @@ void MainWindow::deliverShock()
     ui->deliverShock->setEnabled(false); // disabled again
     indicatorLightFlash(ui->deliverShock, false);
 
-    cpr();
-}
-
-void MainWindow::updateNumOfShocks(int num)
-{
-    QString text = "Shocks: " + QString::number(num);
-
-    //set compresssion depth info
-//    QTextCursor cursor = ui->textEdit_shocks->textCursor();
-//    cursor.movePosition(QTextCursor::Start);
-//    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-//    cursor.insertText(text);
+    emit cpr();
 }
 
 void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
@@ -298,37 +385,14 @@ void MainWindow::indicatorLightFlash(QPushButton* indicator, bool on){
     else indicator->setStyleSheet("background-color: grey;border-style: solid;border-width: 1px;border-radius: 10px;max-width: 20px;max-height: 20px;min-width: 20px;min-height: 20px;");
 }
 
-//for indicator 3 (part1) - attaching pad to chest
-void MainWindow::attachPads()
-{
-    // turn indicator light to flash
-    indicatorLightFlash(ui->indicator3);
-
-    qInfo() << "<Voice Prompt> Attach defib pads to patient’s bare chest";
-
-    //text prompt display
-    displayPrompt("Attach defib pads to patient’s bare chest");
-
-}
-
-//for indicator 3 (part2) - attaching pad to chest
-void MainWindow::connectedChest(){
-    // turn indicator light off
-    indicatorLightFlash(ui->indicator3, false);
-
-    //text prompt display
-    ui->textDisplay->setText("");
-
-    analyze(); // trigger step 4
-}
-
 //display ecg wave when analyzing
 void MainWindow::displayEcgPic(){
     clearDisplay();
 
     //get patient attribute
-    Patient* patient = theAEDPlus->getElectrode()->getPatient();
-    QString health_state = patient ->getEcgWave();
+    Patient* conPatient = theAEDPlus->getElectrode()->getPatient();
+    if (conPatient == nullptr) return;
+    QString health_state = conPatient ->getEcgWave();
 
     if(health_state=="PEA"){ui->textDisplay->setIcon(QIcon(":/PEA.jpg"));}
     else if (health_state=="ASYSTOLE"){ui->textDisplay->setIcon(QIcon(":/ASYSTOLE.jpg"));}
@@ -351,48 +415,40 @@ void MainWindow::displayPrompt(QString input){
     auto layout1 = new QHBoxLayout(btn);
     layout1->addWidget(label,0,Qt::AlignCenter);
 
+    // print the voice prompt to console
+    qInfo() << "<Voice Prompt>" << input;
+
 }
 
 void MainWindow::deliverCPR()
 {
-    qDebug() << "Starting CPR";
-    indicatorLightFlash(ui->indicator5, true);
-    theAEDPlus->deliverCPR();
-    indicatorLightFlash(ui->indicator5, false);
-    qDebug() << "finished CPR";
+    // safety - check 1 battery, 2 electrode connection, 3 pads attached
+    if (!(theAEDPlus->isPowered()
+          && theAEDPlus->batteryCheck(5)
+          && theAEDPlus->connectCheck()
+          && theAEDPlus->attachCheck())) return;
 
-    analyze();
+    // qDebug() << "Starting CPR";
+    indicatorLightFlash(ui->indicator5, true);
+    QMetaObject::invokeMethod(theAEDPlus, "deliverCPR");
+}
+
+void MainWindow::finishCPR()
+{
+    indicatorLightFlash(ui->indicator5, false);
+    // qDebug() << "finished CPR";
+
+    QTimer::singleShot(1000, [this](){
+        emit analyze();  // go back to analyze
+    });
 }
 
 void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
 {
-    qDebug() << " updating display for cpr feedback";
+    // qDebug() << " updating display for cpr feedback";
     displayPrompt(feedBack);
     QString depth = "Depth: " + QString::number(cprDepth) + " cm";
-
-    //set compresssion depth info
-//    QTextCursor cursor = ui->textEdit_depth->textCursor();
-//    cursor.movePosition(QTextCursor::Start);
-//    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-//    cursor.insertText(depth);
-
-    qDebug() << " finished updating display for cpr feedback";
-}
-
-void MainWindow::waitForGuiChange(int milliseconds)
-{
-    QTimer* timer = new QTimer(this);
-    timer->setSingleShot(true);
-
-    connect(timer, &QTimer::timeout, &eventLoop, [=](){
-        //qDebug() << "timer out!";
-        eventLoop.quit();
-    });
-    timer->start(milliseconds);
-    eventLoop.exec();
-
-    delete timer;
-
+    // qDebug() << " finished updating display for cpr feedback";
 }
 
 void MainWindow::clearDisplay() {
@@ -420,19 +476,4 @@ void MainWindow::nonBlockingSleep(int seconds)
     QTime timeout = QTime::currentTime().addSecs(seconds);
     while (QTime::currentTime() < timeout)
         QCoreApplication::processEvents(QEventLoop::AllEvents);
-}
-
-void MainWindow::updateDisplay(QString a, int num)
-{
-
-      ui->elapsedtime->setText("E.T.: "+a.mid(3,5));// only need substring 00:00:00
-      QString qstr = QString::fromStdString(std::to_string(num));
-      ui->shocks->setText("Shocks: "+qstr);
-      QString qstr2 = QString::fromStdString(std::to_string(ui->depth->value()));
-      ui->depthdisplay->setText("Dep: "+qstr2.mid(0,3)+"cm");
-
-}
-
-void MainWindow::resetCPRdepth(){
-    ui->depth->setValue(0.0);
 }

@@ -5,101 +5,112 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
-AED::AED(int batteryLevel) : batteryLevel(batteryLevel),
-    numOfShocks(0), shockAmount(0) {
-    elapsedTime.start(); //start elapsed timer
-    electrode = nullptr;
+AED::AED(int batteryLevel) :
+    powered(false), state(0), batteryLevel(batteryLevel), numOfShocks(0), shockAmount(0)
+{
+    thread.reset(new QThread);
+    moveToThread(thread.get());
+    thread->start();
 
+    electrode = nullptr;
 }
 
 AED::~AED() {
+    thread->quit();
+    thread->wait();
 }
 
+int AED::getNumShocks()
+{
+    return numOfShocks;
+}
 
-void AED::updateDisplayTime(){
-//   qDebug() << time.elapsed();
-   int secs = time.elapsed() / 1000;
-           int mins = (secs / 60) % 60;
-           int hours = (secs / 3600);
-           secs = secs % 60;
-         QString a = QString("%1:%2:%3").arg(hours, 2, 10, QLatin1Char('0'))
-                               .arg(mins, 2, 10, QLatin1Char('0'))
-                               .arg(secs, 2, 10, QLatin1Char('0')) ;
+int AED::getState()
+{
+    return state;
+}
 
-         emit updateDisplay(a,numOfShocks);
+void AED::setState(int state)
+{
+    if (state < 0 || state > 5) return;
+    mutex.lock();
+    this->state = state;
+    mutex.unlock();
+}
+
+bool AED::isPowered()
+{
+    return powered;
 }
 
 void AED::powerOn(){
+    mutex.lock();
+    powered = true;
+    mutex.unlock();
 
-        emit displayPrompt(QString("STARTING AED..."));
-        emit indicatorSig1On();
-        emit displayPrompt(QString("RUNNING SELF TEST"));
-
-    //this timer is for elapsed time, so that it will show 'real-time'
-                time.start();
-                QTimer *timer = new QTimer(this);
-                connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplayTime()));
-                timer->start(1000);
-
-        QTimer::singleShot(3000, [this](){
-            if(selfTest()){
-
-
-                emit selfTestResult(true);
-                emit indicatorSig1Off();
-                emit displayPrompt(QString("STAY CALM"));
-                emit displayPrompt(QString("CHECK RESPONSIVENESS."));
-                emit indicatorSig2On();
-                QTimer::singleShot(5000, [this](){
-                    emit displayPrompt(QString("CALLING EMERGENCY SERVICES!"));
-                    emit indicatorSig2Off();
-                    emit attach();
-                });
-            }
-            else{
-               QTimer::singleShot(3000, [this](){
-                 powerOff();
-               });
-            }
-       });
+    // this timer is for elapsed time, so that it will show 'real-time'
+    elapsedTime.start();
 }
 
+int AED::getElapsedSec()
+{
+    return elapsedTime.elapsed();
+}
 
 void AED::powerOff(){
-    //whatever we decide should happen
-    emit powerOffFromAED();
+    mutex.lock();
+    powered = false;
+    mutex.unlock();
 }
 
-
-bool AED::selfTest(){
-
-    if((getElectrode()!=nullptr) && hasBattery()){//add battery condition
-        qInfo("UNIT OK.");
-        return true;
+void AED::selfTest(){
+    if (hasBattery(20) && (electrode != nullptr)) {
+        powerOn();
+        emit passSelfTest();
+    } else {
+        if (!hasBattery(20)) emit batteryLow();
+        else emit lossConnection();
     }
+}
 
-    emit displayPrompt(QString("UNIT FAILED."));
-    if(!hasBattery()){
-         emit displayPrompt(QString("CHANGE BATTERIES."));
+// if false returned in MW, poweroff
+bool AED::batteryCheck(int minBattery) {
+    if (batteryLevel < minBattery) {
+        batteryLow();
         return false;
     }
-    if(getElectrode()==nullptr){
-         emit displayPrompt(QString("CONNECT ELECTRODE AND RESTART AED."));
-    }
-    return false;
+    return true;
 }
 
+// if false returned in MW, poweroff
+bool AED::connectCheck() {
+    if (electrode == nullptr) {
+        lossConnection();
+        return false;
+    }
+    return true;
+}
+
+bool AED::attachCheck() {
+    if (electrode == nullptr || electrode->getPatient() == nullptr) {
+        lossAttach();
+        return false;
+    }
+    return true;
+}
 
 void AED::connectElectrode(Electrode* electrode){
+    mutex.lock();
     this->electrode = electrode;
+    mutex.unlock();
 }
 
 Electrode* AED::getElectrode(){
     return electrode;
 }
 
-bool AED::hasBattery(){
-    return batteryLevel >= 10;
+bool AED::hasBattery(int minBattery){
+    return batteryLevel >= minBattery;
 }
 
 int AED::getBattery(){
@@ -107,7 +118,9 @@ int AED::getBattery(){
 }
 
 void AED::setBattery(int b){
+    mutex.lock();
     batteryLevel=b;
+    mutex.unlock();
 }
 
 void AED::updateBattery(int b){
@@ -116,30 +129,20 @@ void AED::updateBattery(int b){
 
 void AED::chargeBattery() {
     updateBattery(100);
-    //emit updateFromAED(100);
 }
 
 void AED::consumeBattery(int b){
-
     int newBattery = getBattery()-b;
     updateBattery(newBattery);
-    //emit updateFromAED(newBattery);
-
 }
+
 
 void AED::analyzeAndDecideShock()
 {
-    if (electrode == nullptr) {
-        qDebug() << "Warning! The electrode is not connected to AED.";
-        return;
-    }
+    // safety check
+    if (!(powered && batteryCheck(5) && connectCheck() && attachCheck())) return;
 
     Patient* patient = electrode->getPatient();
-    if (patient == nullptr) {
-        qDebug() << "Warning! The electrode pad is not attached to the patient's chest correctly.";
-        return;
-    }
-
     QString age = patient->getAgeStage();
     QString ecgWave = patient->getEcgWave();
     consumeBattery(5);
@@ -154,53 +157,89 @@ void AED::analyzeAndDecideShock()
             else if (numOfShocks == 1) shockAmount = 70;
             else shockAmount = 85;
         }
+        QThread::sleep(2);
         qInfo() << ecgWave << "detected. Shock is advised.";
-        shockable();  // signal -> MainWindow shockable() enable shock delivery button
+        emit shockable();
     } else if (ecgWave == "PEA" || ecgWave == "ASYSTOLE") {
+        QThread::sleep(2);
         qInfo() << ecgWave << "detected. No shock advised.";
-        nonShockable();
+        emit nonShockable();
     }
 }
 
 void AED::deliverShock()
 {
-    qDebug() << "Shock at" << shockAmount << "J delivered.";
+    // safety check
+    if (!(powered && batteryCheck(20) && connectCheck() && attachCheck())) return;
+
+    qInfo() << "Shock at" << shockAmount << "J delivered.";
     ++numOfShocks;
     consumeBattery(20);
-
-    updateNumOfShocks(numOfShocks); // reflect num of shocks in display
-
 }
 
 void AED::deliverCPR()
 {
-    qDebug() << " Started Delivering CPR ";
+    // safety check
+    if (!(powered && connectCheck() && attachCheck())) return;
 
-    QElapsedTimer timer;
-    timer.start();
+    //qDebug() << " Started Delivering CPR ";
+    QElapsedTimer cprTimer;
+    cprTimer.start();
+    qint64 cprTime = 2 * 60 * 1000/4; // 2 minutes / 4 = 30 sec for simulation
+    int numCycle = 0;
 
-    qint64 cprTime = 2 * 60 * 1000/4; //2 minutes
-    int c = 0;
-    while(timer.elapsed() < cprTime) {
-        qDebug() << "starting compressions";
-        doCompressions(5);
-        qDebug() << "finished compressions";
-        waitForGuiChange(5000);
+    while (cprTimer.elapsed() < cprTime) {
+        // qDebug() << "starting compressions";
+        QString feedBack = "";
 
-        //2 breathes
+        // safety - check electrode connection, pads attached
+        if (!(powered && connectCheck() && attachCheck())) return;
+
+        // 5 compressions
+        int num = 0;
+        for (; num < 5; ++num) {
+            // safety - check electrode connection, pads attached
+            if (!(powered && connectCheck() && attachCheck())) return;
+
+            double depth = electrode->getCompressionDepth();
+            int result = analayzeCPRDepth(depth);
+            if (result == 0) feedBack = "Good CPR!";
+            else if (result < 0) feedBack = "Push harder";
+            else feedBack = "Push slower";
+
+            // qDebug() << "current cpr depth: " << QString::number(cpr) << " " << depth;
+            CPRFeedback(feedBack + " " + QString::number(num+1), depth);
+            QThread::sleep(3);
+
+            if (result != 0) {
+                // wait before getting new updateCPRDepth
+                QThread::sleep(5);
+                // qDebug() << "updated cpr depth: " << electrode->getCompressionDepth();
+            }
+        }
+        // qDebug() << "Delivered " << num << " compressions";
+
+        QThread::sleep(3);
+
+        // 2 breathes
+        if (!(powered && connectCheck() && attachCheck())) return;
         CPRFeedback("Give one breath", 0);
-        waitForGuiChange(5000);
+        QThread::sleep(3);
+
+        if (!(powered && connectCheck() && attachCheck())) return;
         CPRFeedback("Give another breath", 0);
-        waitForGuiChange(5000);
-
-        qDebug() << "\n\n";
-        c++;
+        QThread::sleep(3);
+        ++numCycle;
     }
-    CPRFeedback("Stop CPR", 0);
-    waitForGuiChange(1000);
-    qDebug() << " did " << c << " cycle of compressions";
 
-    qDebug() << "Finished Delivering CPR ";
+    if (!(powered && connectCheck() && attachCheck())) return;
+
+    CPRFeedback("Stop CPR", 0);
+    QThread::sleep(1);
+    // qDebug() << " did " << numCycle << " cycle of CPRs";
+    // qDebug() << "Finished Delivering CPR ";
+
+    emit finishCPR();
 }
 
 /* age stage - depth inch - cm
@@ -214,7 +253,7 @@ int AED::analayzeCPRDepth(double d)
     double maxDepth = 6.09;
 
     QString age = electrode->getPatient()->getAgeStage();
-    qDebug() << "age: " << age;
+    // qDebug() << "age: " << age;
     if (age == "Child") {
         minDepth = 5.03;
         maxDepth = 5.13;
@@ -227,47 +266,8 @@ int AED::analayzeCPRDepth(double d)
         return -1;
     } else if (d > maxDepth) {
         return 1;
-    }else {
+    } else {
         return 0;
     }
-
-}
-
-void AED::doCompressions(int numberOfCompressions)
-{
-    QString feedBack = "";
-
-    qDebug() << "current cpr depth: " << electrode->getCompressionDepth();
-    int d = analayzeCPRDepth(electrode->getCompressionDepth());
-
-    int cpr = 0;
-    for (; cpr < numberOfCompressions; ++cpr) {
-        if (d == 0) {
-            //display good cpr
-            feedBack = "Good CPR!";
-        } else if (d < 0) {
-            //display push harder
-            feedBack = "Push harder";
-        } else {
-            feedBack = "Push slower";
-        }
-
-        qDebug() << "current cpr depth: " << QString::number(cpr) << " " << electrode->getCompressionDepth();
-        CPRFeedback(feedBack + " " + QString::number(cpr), electrode->getCompressionDepth());
-        waitForGuiChange(2000);
-
-        if (d != 0) {
-
-            //wait before getting new updateCPRDepth
-            waitForGuiChange(10000);
-
-            qDebug() << "updated cpr depth: " << electrode->getCompressionDepth();
-        }
-        d = analayzeCPRDepth(electrode->getCompressionDepth());
-    }
-    qDebug() << "Delivered " << cpr << " compressions";
-
-    //reset the CPR to be zero
-    emit resetCPRdepth();
 
 }

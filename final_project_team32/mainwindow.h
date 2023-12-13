@@ -20,66 +20,62 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void pressPowerButton();
-    bool isPowered();
-
 public slots:
-    void selfTestResult(bool);
+    void passSelfTest();
+    void batteryLow();
+    void lossConnection();
+    void handleLossAttach();
+
     void shockable();
     void nonShockable();
     void CPRFeedback(QString feedBack, float cprDepth);
-    void waitForGuiChange(int milliseconds);
-	
-    void updateNumOfShocks(int num);
-
-    void resetCPRdepth();
+    void finishCPR();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
-    void powerOff();
-     void displayPrompt(QString input);
-    
-private:
+    void displayPrompt(QString input);
+    void updateBattery(int v);
 
-    void powerOn();  // start the cycle after power on
-    void displayEcgPic();
-    void clearDisplay();
-    void nonBlockingSleep(int seconds);
-
-    Ui::MainWindow *ui;
-    bool powered;
-    AED* theAEDPlus;
-    Electrode* electrode;
-    Patient* patient;
-    QEventLoop eventLoop;
+signals:
+    void attach();
+    void analyze();
+    void cpr();
 
 private slots:
-
+    void pressPowerButton();//!
     void changeElectrodeConnection(bool);
     void changePatientAttach(bool);
     void confirmInitialization();
-    
-    void analyzeHeartRhythm();  // step 4
-    void deliverShock();  // step 4
 
-    void setBattery(int v);
+    // batteries
     void updateBatteryInAED(int v);
     void on_increase_clicked();
     void on_decrease_clicked();
 
-    void attachPads();  //step3
-    void connectedChest(); //step3
+    void attachPads();
+    void analyzeHeartRhythm();
+    void deliverShock();
     void deliverCPR();
 
-    //try
-    //void updateDisplayTime(QString); //it works
+    void updateDisplay();
 
-    //try another
-    void updateDisplay(QString,int);
+private:
+    void powerOn();
+    void powerOff();
+    void checkResponse();
+    void callEmergency();
 
+    void displayEcgPic();
+    void clearDisplay();
+    void nonBlockingSleep(int seconds);
+    void resetAdmin();
 
+    Ui::MainWindow *ui;
+    AED* theAEDPlus;
+    QTimer timer;  // updates AED state
 
-signals:
-    void analyze();
-    void cpr();
+    Electrode* electrode;
+    Patient* patient;
+    QEventLoop eventLoop;
+
 };
 
 #endif // MAINWINDOW_H
