@@ -175,14 +175,12 @@ void AED::deliverCPR()
     // safety check
     if (!(powered && connectCheck() && attachCheck())) return;
 
-    //qDebug() << " Started Delivering CPR ";
     QElapsedTimer cprTimer;
     cprTimer.start();
     qint64 cprTime = 2 * 60 * 1000/4; // 2 minutes / 4 = 30 sec for simulation
     int numCycle = 0;
 
     while (cprTimer.elapsed() < cprTime) {
-        // qDebug() << "starting compressions";
         QString feedBack = "";
 
         // safety - check electrode connection, pads attached
@@ -200,17 +198,14 @@ void AED::deliverCPR()
             else if (result < 0) feedBack = "Push harder";
             else feedBack = "Push slower";
 
-            // qDebug() << "current cpr depth: " << QString::number(cpr) << " " << depth;
             CPRFeedback(feedBack + " " + QString::number(num+1), depth);
             QThread::sleep(3);
 
             if (result != 0) {
                 // wait before getting new updateCPRDepth
                 QThread::sleep(5);
-                // qDebug() << "updated cpr depth: " << electrode->getCompressionDepth();
             }
         }
-        // qDebug() << "Delivered " << num << " compressions";
 
         QThread::sleep(3);
 
@@ -229,8 +224,6 @@ void AED::deliverCPR()
 
     CPRFeedback("Stop CPR", 0);
     QThread::sleep(1);
-    // qDebug() << " did " << numCycle << " cycle of CPRs";
-    // qDebug() << "Finished Delivering CPR ";
 
     emit finishCPR();
 }
@@ -246,7 +239,6 @@ int AED::analayzeCPRDepth(double d)
     double maxDepth = 6.09;
 
     QString age = electrode->getPatient()->getAgeStage();
-    // qDebug() << "age: " << age;
     if (age == "Child") {
         minDepth = 5.03;
         maxDepth = 5.13;

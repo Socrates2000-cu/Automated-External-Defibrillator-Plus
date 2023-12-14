@@ -400,7 +400,6 @@ void MainWindow::deliverCPR()
           && theAEDPlus->connectCheck()
           && theAEDPlus->attachCheck())) return;
 
-    // qDebug() << "Starting CPR";
     indicatorLightFlash(ui->indicator5, true);
     QMetaObject::invokeMethod(theAEDPlus, "deliverCPR");
 }
@@ -408,7 +407,6 @@ void MainWindow::deliverCPR()
 void MainWindow::finishCPR()
 {
     indicatorLightFlash(ui->indicator5, false);
-    // qDebug() << "finished CPR";
 
     QTimer::singleShot(1000, [this](){
         emit analyze();  // go back to analyze
@@ -417,14 +415,12 @@ void MainWindow::finishCPR()
 
 void MainWindow::CPRFeedback(QString feedBack, float cprDepth)
 {
-    // qDebug() << " updating display for cpr feedback";
     displayPrompt(feedBack);
     QString depth = "Depth: " + QString::number(cprDepth) + " cm";
-    // qDebug() << " finished updating display for cpr feedback";
 }
 
 void MainWindow::clearDisplay() {
-    //delete the layout we might have
+    // delete the layout we might have
     QLayout *layout = ui->textDisplay->layout();
     if (layout)
     {
