@@ -7,9 +7,9 @@ Automated External Defibrillator Plus system simulation
   - Class Design
   - Diagrams
 - Sore Adedotun
-  - Program Logic
-  - Class Design
-  - Diagrams
+  - Program Logic - AED startup, self-test, battery, electrode check and initial states of the AED along with signals/slots required for this stage.
+  - Class Design - MainWindow, AED.
+  - Diagrams - Safety scenarios and state diagram.
 - Sukhrobjon Eshmirzaev
   - Program Logic
   - Class Design
