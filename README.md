@@ -17,11 +17,11 @@ https://youtu.be/KQlV2cWFG3Y
   - Program Logic - Simulated delivering CPR by analayzing CPR depth to deliver at proper depth, giving real-time CPR feedback, updating CPR depth,
   - Class Design - AED, MainWindow
   - Diagrams - No shockable case sequence diagram, Main use case,
-- Xuejiao Qing
-  - UI
-  - Program Logic
-  - Class Design
-  - Diagrams
+- Xuejiao Qing - 101218514
+  - UI - most UI display
+  - Program Logic - simulating attaching pads to patient's chest, impoving real-time display for elapsed time
+  - Class Design - AED, MainWindow
+  - Diagrams - Shockable case case sequence diagram, traceability matrix
 
 ## Organization of submission
 - Documentation - use cases, demo video, UML diagrams
