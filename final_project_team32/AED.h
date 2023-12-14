@@ -3,8 +3,9 @@
 
 #include <QObject>
 #include <QElapsedTimer>
+#include <QTime>
+#include <QTimer>
 #include "Electrode.h"
-#include "QTimer"
 
 class AED: public QObject {
 
@@ -26,8 +27,7 @@ public:
 
     bool hasBattery(int minBattery);
     void setBattery(int b);
-    void consumeBattery(int);
-    void updateBattery(int b);
+    void consumeBattery(int b);
 
     // safety checks in each step
     bool batteryCheck(int minBattery);
@@ -49,7 +49,7 @@ signals:
     void lossConnection();
     void lossAttach();
 
-    void updateFromAED(int b);
+    void updateBatteryUI();
     void checkElectrode();
     void shockable();
     void nonShockable();

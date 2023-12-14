@@ -1,11 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QPixmap>
-#include <thread>
-#include <chrono>
-#include "Sleeper.cpp"
 #include <QDebug>
-
 
 MainWindow::MainWindow(QWidget *parent):
     QMainWindow(parent), ui(new Ui::MainWindow)
@@ -37,8 +32,7 @@ MainWindow::MainWindow(QWidget *parent):
     connect(theAEDPlus, &AED::lossAttach, this, &MainWindow::handleLossAttach);
 
     // progress bar for battery
-    connect(ui->battery, SIGNAL(valueChanged(int)), this, SLOT(updateBatteryInAED(int)));
-    connect(theAEDPlus, &AED::updateFromAED, this, &MainWindow::updateBattery);
+    connect(theAEDPlus, &AED::updateBatteryUI, this, &MainWindow::updateBatteryUI);
     connect(ui->charge_battery, SIGNAL(clicked()), theAEDPlus, SLOT(chargeBattery()));
 
     // connections of attaching pad (step 3)
@@ -249,43 +243,21 @@ void MainWindow::changePatientAttach(bool attached)
     }
 }
 
-void MainWindow::updateBattery(int v){
-    ui->battery->setValue(v);
-    //qInfo("battery from AED is: %d", v);
-}
-
-void MainWindow::updateBatteryInAED(int v){
-
-    theAEDPlus->setBattery(v);
-    if(theAEDPlus->getBattery() == 0){
-        powerOff();
-        return;
-    }
-    if(theAEDPlus->getBattery() < 5){
-        displayPrompt("BATTERY RUNNING LOW. RECHARGE OR CHANGE BATTERY SOON.");
-    }
-    //qInfo("battery is: %d", v);
-
+void MainWindow::updateBatteryUI(){
+    int battery = theAEDPlus->getBattery();
+    ui->battery->setValue(battery);
 }
 
 void MainWindow::on_increase_clicked()
 {
-    int value = ui->battery->value();
-    //qInfo("value: %d", value);
-    value+=1;
-    ui->battery->setValue(value);
-    //qInfo("Increased to: %d", value);
+    int battery = theAEDPlus->getBattery();
+    theAEDPlus->setBattery(battery + 1);
 }
 
 void MainWindow::on_decrease_clicked()
 {
-
-    int value = ui->battery->value();
-    //qInfo("value: %d", value);
-    value-=1;
-    ui->battery->setValue(value);
-    //qInfo("Decreased to: %d", value);
-
+    int battery = theAEDPlus->getBattery();
+    theAEDPlus->setBattery(battery - 1);
 }
 
 // attaching pad to chest

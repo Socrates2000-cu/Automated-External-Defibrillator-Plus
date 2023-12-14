@@ -2,10 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTime>
-#include <QTimer>
 #include <QPushButton>
-#include <QEventLoop>
 #include "AED.h"
 
 QT_BEGIN_NAMESPACE
@@ -32,7 +29,7 @@ public slots:
     void finishCPR();
     void indicatorLightFlash(QPushButton* indicator, bool on = true);  // false if turn the light off
     void displayPrompt(QString input);
-    void updateBattery(int v);
+    void updateBatteryUI();
 
 signals:
     void attach();
@@ -46,7 +43,6 @@ private slots:
     void confirmInitialization();
 
     // batteries
-    void updateBatteryInAED(int v);
     void on_increase_clicked();
     void on_decrease_clicked();
 
@@ -69,12 +65,10 @@ private:
     void resetAdmin();
 
     Ui::MainWindow *ui;
-    AED* theAEDPlus;
     QTimer timer;  // updates AED state
-
+    AED* theAEDPlus;
     Electrode* electrode;
     Patient* patient;
-    QEventLoop eventLoop;
 
 };
 

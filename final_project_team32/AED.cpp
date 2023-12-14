@@ -1,9 +1,5 @@
-#include "AED.h"
 #include <QDebug>
-#include <QThread>
-#include <QTime>
-#include <QTimer>
-#include <QElapsedTimer>
+#include "AED.h"
 
 AED::AED(int batteryLevel) :
     powered(false), state(0), batteryLevel(batteryLevel), numOfShocks(0), shockAmount(0)
@@ -119,23 +115,19 @@ int AED::getBattery(){
 
 void AED::setBattery(int b){
     mutex.lock();
-    batteryLevel=b;
+    batteryLevel = b;
     mutex.unlock();
-}
-
-void AED::updateBattery(int b){
-    emit updateFromAED(b);
+    emit updateBatteryUI();
 }
 
 void AED::chargeBattery() {
-    updateBattery(100);
+    setBattery(100);
 }
 
 void AED::consumeBattery(int b){
-    int newBattery = getBattery()-b;
-    updateBattery(newBattery);
+    int newBattery = batteryLevel - b;
+    setBattery(newBattery);
 }
-
 
 void AED::analyzeAndDecideShock()
 {

@@ -12,7 +12,6 @@ SOURCES += \
     AED.cpp \
     Electrode.cpp \
     Patient.cpp \
-    Sleeper.cpp \
     main.cpp \
     mainwindow.cpp
 
