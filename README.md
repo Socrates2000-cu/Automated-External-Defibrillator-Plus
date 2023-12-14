@@ -6,29 +6,29 @@ https://youtu.be/KQlV2cWFG3Y
 
 ## Team Members
 - Frances Fang - 101219152
-  - Program Logic - Heart rhythm analysis, shock delivery, multi-thread function invocation, AED power off, merging steps and added safety checks in steps.
+  - Program Logic - Heart rhythm analysis, shock delivery, multi-thread function invocation, AED power off, merging steps, and added safety checks in steps.
   - Class Design - MainWindow, AED, Patient, Electrode.
   - Diagrams - UML and use case diagram.
-- Sore Adedotun
-  - Program Logic - AED startup, self-test, battery, electrode check and initial states of the AED along with signals/slots required for this stage.
+- Sore Adedotun 101012236
+  - Program Logic - AED startup, self-test, battery, electrode check, and initial states of the AED along with signals/slots required for this stage.
   - Class Design - MainWindow, AED.
   - Diagrams - Safety scenarios and state diagram.
 - Sukhrobjon Eshmirzaev - 101169793
-  - Program Logic - Simulated delivering CPR by analayzing CPR depth to deliver at proper depth, giving real-time CPR feedback, updating CPR depth,
+  - Program Logic - Simulated delivering CPR by analyzing CPR depth to deliver at proper depth, giving real-time CPR feedback, updating CPR depth,
   - Class Design - AED, MainWindow
-  - Diagrams - No shockable case sequence diagram, Main use case,
+  - Diagrams - Non-shockable case sequence diagram, Main use case,
 - Xuejiao Qing - 101218514
   - UI - most UI display
-  - Program Logic - simulating attaching pads to patient's chest, impoving real-time display for elapsed time
+  - Program Logic - simulating attaching pads to patient's chest, improving real-time display for elapsed time
   - Class Design - AED, MainWindow
   - Diagrams - Shockable case sequence diagram, traceability matrix
 
 ## Organization of submission
 - Documentation - use cases, demo video, UML diagrams
-- final_project_team32 - all header files, source files and images required to run the program
+- final_project_team32 - all header files, source files, and images required to run the program
 
 ## Design Explanation
-Our overall design decision takes into account what the AED has 7 states in total. It has a "shut down" state, a "start-up" state, and five states corresponding to the five steps.
+Our overall design decision takes into account that the AED has 7 states in total. It has a "shut down" state, a "start-up" state, and five states corresponding to the five steps.
 
 We write function calls in a "chain", with the help of Qt signal and slots. Except for the first two steps which don't have some real analysis, we connect the other steps (3-5) with signals. Once a step is finished, it calls the signal to trigger the next step. The advantage is these "linked-list" like function "chains" are more flexible, if sometime in the treatment the connection is lost, or if the shock is not advised, we can easily decide the next step.
 
