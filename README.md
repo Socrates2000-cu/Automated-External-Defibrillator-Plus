@@ -1,6 +1,9 @@
 # Automated-External-Defibrillator-Plus
 Automated External Defibrillator Plus system simulation
 
+## Video
+https://youtu.be/KQlV2cWFG3Y
+
 ## Team Members
 - Frances Fang
   - Program Logic - Heart rhythm analysis, shock delivery, multi-thread function invocation, AED power off, merging steps and added safety checks in steps.
