@@ -1,0 +1,109 @@
+title Shockable_To_No_Shockable_CPR_Scenario
+
+actor rescuer
+participant "mainwindow:MainWindow" as mainwindow
+participant "healthState:QComboBox" as combobox
+participant "theAEDPlus:AED" as AED
+participant "electrode:Electrode" as Electrode
+participant "patient:Patient" as Patient
+participant "shockDeliverButton:QPushButton" as shockDeliverButton
+
+autoactivation on
+entryspacing 1.0
+
+rescuer->mainwindow:confirmInitialization()
+deactivateafter mainwindow
+rescuer->mainwindow:changeElectrodeConnection(true)
+mainwindow->AED:connectElectrode(electrode)
+deactivateafter mainwindow
+deactivateafter AED
+rescuer->mainwindow:pressPowerButton()
+mainwindow->mainwindow:powerOn()
+deactivateafter mainwindow
+mainwindow->AED:selftest()
+deactivateafter mainwindow
+AED->AED:powerOn()
+deactivateafter AED
+AED->mainwindow:passSelfTest()
+deactivateafter AED
+mainwindow->mainwindow:checkResponse()
+deactivateafter mainwindow
+mainwindow->mainwindow:callEmergency()
+deactivateafter mainwindow
+mainwindow->mainwindow:attachPads()
+deactivateafter mainwindow
+deactivateafter mainwindow
+rescuer->mainwindow:changePatientAttach(true)
+mainwindow->Electrode:attachPatient(patient)
+deactivateafter Electrode
+
+//analyze
+mainwindow->mainwindow:analyzeHeartRhythm()
+deactivateafter mainwindow
+mainwindow->AED:analyzeAndDecideShock()
+deactivateafter mainwindow
+AED->Patient:getEcgWave()
+deactivateafter Patient
+
+//shock advised
+AED->mainwindow:shockable()
+deactivateafter AED
+deactivateafter mainwindow
+
+//deliver shock
+rescuer->shockDeliverButton:clicked()
+shockDeliverButton->mainwindow:deliverShock()
+deactivateafter shockDeliverButton
+mainwindow->AED:deliverShock()
+deactivateafter AED
+
+//deliver CPR
+mainwindow->mainwindow:deliverCPR()
+deactivateafter mainwindow
+mainwindow->AED:deliverCPR()
+deactivateafter mainwindow
+
+loop 2 minutes
+AED->mainwindow:CPRFeedback()
+deactivateafter mainwindow
+end
+AED->mainwindow:finishCPR
+deactivateafter AED
+
+// change state
+rescuer->combobox:currentTextChanged("PEA")
+deactivateafter combobox
+
+//analyze
+mainwindow->mainwindow:analyzeHeartRhythm()
+deactivateafter mainwindow
+
+mainwindow->AED:analyzeAndDecideShock()
+deactivateafter mainwindow
+AED->Patient:getEcgWave()
+deactivateafter Patient
+
+// no shock advised
+AED->mainwindow:nonShockable()
+deactivateafter AED
+
+//deliver CPR
+mainwindow->mainwindow:deliverCPR()
+deactivateafter mainwindow
+mainwindow->AED:deliverCPR()
+deactivateafter mainwindow
+
+loop 2 minutes
+AED->mainwindow:CPRFeedback()
+deactivateafter mainwindow
+end
+AED->mainwindow:finishCPR
+deactivateafter AED
+deactivateafter mainwindow
+
+rescuer->mainwindow:pressPowerButton()
+mainwindow->mainwindow:powerOff()
+deactivateafter mainwindow
+mainwindow->AED:powerOff()
+deactivateafter mainwindow
+deactivateafter AED
