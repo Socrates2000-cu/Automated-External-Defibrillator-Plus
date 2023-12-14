@@ -19,7 +19,6 @@ HEADERS += \
     AED.h \
     Electrode.h \
     Patient.h \
-    defs.h \
     mainwindow.h
 
 FORMS += \
