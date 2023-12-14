@@ -56,6 +56,7 @@ int AED::getElapsedSec()
 void AED::powerOff(){
     mutex.lock();
     powered = false;
+    numOfShocks = 0;
     mutex.unlock();
 }
 
