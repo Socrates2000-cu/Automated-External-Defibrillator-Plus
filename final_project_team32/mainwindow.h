@@ -37,7 +37,7 @@ signals:
     void cpr();
 
 private slots:
-    void pressPowerButton();//!
+    void pressPowerButton();
     void changeElectrodeConnection(bool);
     void changePatientAttach(bool);
     void confirmInitialization();
