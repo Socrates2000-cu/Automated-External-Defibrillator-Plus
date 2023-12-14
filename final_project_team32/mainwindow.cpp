@@ -134,6 +134,7 @@ void MainWindow::resetAdmin()
     ui->connectAED->setChecked(false);
     ui->connectChest->setChecked(false);
     ui->depth->setValue(0.0);
+    theAEDPlus->reSetNumShocks();
     ui->charge_battery->setEnabled(true);
 
     ui->shocks->setText("Shock:  0");

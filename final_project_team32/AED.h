@@ -20,6 +20,7 @@ public:
     int getBattery();
     Electrode* getElectrode();
     int getNumShocks();
+    void reSetNumShocks();
     int getElapsedSec();
 
     void connectElectrode(Electrode*);

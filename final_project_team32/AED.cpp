@@ -21,6 +21,11 @@ int AED::getNumShocks()
     return numOfShocks;
 }
 
+void AED::reSetNumShocks()
+{
+    numOfShocks=0;
+}
+
 int AED::getState()
 {
     return state;
